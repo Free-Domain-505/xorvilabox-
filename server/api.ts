@@ -761,7 +761,7 @@ apiRouter.delete('/files/:id', requireAuth, async (req: Request, res: Response) 
    STORAGE & DASHBOARD METRICS
    ======================================================== */
 
-apiRouter.get('/storage/stats', async (_req: Request, res: Response) => {
+const handleStorageStats = async (_req: Request, res: Response) => {
   const diskStats = await getDiskStatistics();
   const db = getDb();
 
@@ -781,7 +781,10 @@ apiRouter.get('/storage/stats', async (_req: Request, res: Response) => {
       storagePath: diskStats.storagePath,
     },
   });
-});
+};
+
+apiRouter.get('/stats', handleStorageStats);
+apiRouter.get('/storage/stats', handleStorageStats);
 
 apiRouter.get('/dashboard', async (req: Request, res: Response) => {
   const diskStats = await getDiskStatistics();

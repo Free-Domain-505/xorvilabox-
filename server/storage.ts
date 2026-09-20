@@ -1,5 +1,6 @@
 import path from 'path';
 import fs from 'fs';
+import { execSync } from 'child_process';
 import { type Request, type Response } from 'express';
 
 export function getStorageRoot(): string {
@@ -181,52 +182,91 @@ export async function getDiskStatistics(): Promise<{
   storagePath: string;
 }> {
   const storagePath = getStorageRoot();
-  let totalDiskBytes = 1000 * 1024 * 1024 * 1024; // 1 TB default
-  let freeDiskBytes = 750 * 1024 * 1024 * 1024;
-  let usedDiskBytes = 250 * 1024 * 1024 * 1024;
+  let totalDiskBytes = 0;
+  let freeDiskBytes = 0;
+  let usedDiskBytes = 0;
 
+  // 1. Primary: Use native Linux df -B1 for exact VPS disk partition statistics
   try {
-    if (typeof fs.statfs === 'function') {
-      const stats = await new Promise<fs.BigIntStatsFs | fs.StatsFs>((resolve, reject) => {
-        fs.statfs(storagePath, (err, s) => {
-          if (err) reject(err);
-          else resolve(s);
-        });
-      });
-
-      const bsize = Number(stats.bsize);
-      const blocks = Number(stats.blocks);
-      const bfree = Number(stats.bavail || stats.bfree);
-
-      totalDiskBytes = blocks * bsize;
-      freeDiskBytes = bfree * bsize;
-      usedDiskBytes = totalDiskBytes - freeDiskBytes;
-    }
-  } catch (err) {
-    console.warn('[XorvilaBox Storage] statfs warning:', err);
-  }
-
-  // Calculate actual XorvilaBox storage directory size
-  let xorvilaBoxBytes = 0;
-  function calculateDirSize(dirPath: string): void {
-    try {
-      if (!fs.existsSync(dirPath)) return;
-      const entries = fs.readdirSync(dirPath, { withFileTypes: true });
-      for (const entry of entries) {
-        const fullPath = path.join(dirPath, entry.name);
-        if (entry.isDirectory()) {
-          calculateDirSize(fullPath);
-        } else if (entry.isFile()) {
-          const stat = fs.statSync(fullPath);
-          xorvilaBoxBytes += stat.size;
+    const dfOut = execSync(`df -B1 "${storagePath}"`, { encoding: 'utf8', timeout: 3000 });
+    const lines = dfOut.trim().split('\n');
+    if (lines.length >= 2) {
+      const parts = lines[1].trim().split(/\s+/);
+      if (parts.length >= 4) {
+        const total = parseInt(parts[1], 10);
+        const used = parseInt(parts[2], 10);
+        const free = parseInt(parts[3], 10);
+        if (!isNaN(total) && total > 0) {
+          totalDiskBytes = total;
+          usedDiskBytes = !isNaN(used) ? used : 0;
+          freeDiskBytes = !isNaN(free) ? free : Math.max(0, total - usedDiskBytes);
         }
       }
-    } catch {
-      // ignore transient file lock
+    }
+  } catch {
+    // df command not available or failed
+  }
+
+  // 2. Secondary: Fallback to Node.js fs.statfs
+  if (totalDiskBytes === 0) {
+    try {
+      if (typeof fs.statfs === 'function') {
+        const stats = await new Promise<fs.BigIntStatsFs | fs.StatsFs>((resolve, reject) => {
+          fs.statfs(storagePath, (err, s) => {
+            if (err) reject(err);
+            else resolve(s);
+          });
+        });
+
+        const bsize = Number(stats.bsize);
+        const blocks = Number(stats.blocks);
+        const bfree = Number(stats.bavail || stats.bfree);
+
+        totalDiskBytes = blocks * bsize;
+        freeDiskBytes = bfree * bsize;
+        usedDiskBytes = totalDiskBytes - freeDiskBytes;
+      }
+    } catch (err) {
+      console.warn('[XorvilaBox Storage] statfs warning:', err);
     }
   }
 
-  calculateDirSize(storagePath);
+  // 3. Fallback to positive values if both detection methods fail
+  if (totalDiskBytes === 0) {
+    totalDiskBytes = 50 * 1024 * 1024 * 1024;
+    freeDiskBytes = 40 * 1024 * 1024 * 1024;
+    usedDiskBytes = 10 * 1024 * 1024 * 1024;
+  }
+
+  // 4. Calculate actual XorvilaBox files size using du -sb with readdir fallback
+  let xorvilaBoxBytes = 0;
+  try {
+    const duOut = execSync(`du -sb "${storagePath}"`, { encoding: 'utf8', timeout: 3000 });
+    const match = duOut.trim().split(/\s+/)[0];
+    const duSize = parseInt(match, 10);
+    if (!isNaN(duSize)) {
+      xorvilaBoxBytes = duSize;
+    }
+  } catch {
+    function calculateDirSize(dirPath: string): void {
+      try {
+        if (!fs.existsSync(dirPath)) return;
+        const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+        for (const entry of entries) {
+          const fullPath = path.join(dirPath, entry.name);
+          if (entry.isDirectory()) {
+            calculateDirSize(fullPath);
+          } else if (entry.isFile()) {
+            const stat = fs.statSync(fullPath);
+            xorvilaBoxBytes += stat.size;
+          }
+        }
+      } catch {
+        // ignore transient file lock
+      }
+    }
+    calculateDirSize(storagePath);
+  }
 
   return {
     totalDiskBytes,

@@ -14,7 +14,10 @@ export const StorageView: React.FC<StorageViewProps> = ({ onShowToast }) => {
   const fetchStats = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/stats');
+      let res = await fetch('/api/stats');
+      if (!res.ok) {
+        res = await fetch('/api/storage/stats');
+      }
       if (!res.ok) throw new Error('Failed to fetch storage stats');
       const data = await res.json();
       setStats(data);
