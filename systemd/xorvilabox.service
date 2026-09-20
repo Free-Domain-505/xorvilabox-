@@ -1,0 +1,26 @@
+[Unit]
+Description=XorvilaBox - Anime Storage & Video Hosting Service
+After=network.target
+
+[Service]
+Type=simple
+User=xorvila
+Group=xorvila
+WorkingDirectory=/var/www/xorvilabox
+EnvironmentFile=/var/www/xorvilabox/.env
+ExecStart=/usr/bin/node /var/www/xorvilabox/dist/server.cjs
+Restart=always
+RestartSec=5s
+
+# Security Hardening
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/var/lib/xorvilabox/storage /var/www/xorvilabox/data
+
+# Resource Limits
+LimitNOFILE=65536
+LimitNPROC=4096
+
+[Install]
+WantedBy=multi-user.target

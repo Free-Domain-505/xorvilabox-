@@ -1,0 +1,6 @@
+{
+  "name": "XorvilaBox",
+  "description": "Production-ready anime storage and file hosting platform with real VPS filesystem storage, automated episode detection, streaming, and URL imports.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
