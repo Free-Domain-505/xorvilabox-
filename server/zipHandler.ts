@@ -2,13 +2,94 @@ import AdmZip from 'adm-zip';
 import path from 'path';
 import fs from 'fs';
 import crypto from 'crypto';
+import { spawn, type ChildProcess } from 'child_process';
+import sevenBin from '7zip-bin';
 import { getDb } from './db.js';
 import { getFolderStoragePath, sanitizeFilename, getMimeType } from './storage.js';
 import { parseAnimeFilename } from './animeParser.js';
 import { transferManager } from './transferManager.js';
 
 const MAX_ZIP_FILES = 5000;
-const MAX_TOTAL_UNCOMPRESSED_SIZE = 25 * 1024 * 1024 * 1024; // 25 GB safety cap
+
+/**
+ * Locate a working 7za or 7z binary.
+ * Ensures the binary has execution permissions (+x).
+ */
+function get7zBinary(): string | null {
+  try {
+    if (sevenBin && sevenBin.path7za && fs.existsSync(sevenBin.path7za)) {
+      try {
+        fs.chmodSync(sevenBin.path7za, 0o755);
+      } catch {}
+      return sevenBin.path7za;
+    }
+  } catch {}
+
+  for (const bin of ['/usr/bin/7za', '/usr/bin/7z', '/usr/local/bin/7za', '7za', '7z']) {
+    try {
+      if (fs.existsSync(bin)) return bin;
+    } catch {}
+  }
+  return null;
+}
+
+/**
+ * Locate system unzip binary.
+ */
+function getUnzipBinary(): string | null {
+  for (const bin of ['/usr/bin/unzip', '/usr/local/bin/unzip', 'unzip']) {
+    try {
+      if (fs.existsSync(bin)) return bin;
+    } catch {}
+  }
+  return null;
+}
+
+/**
+ * Inspect magic bytes of the archive file.
+ */
+export function detectArchiveFormat(filePath: string): '7z' | 'zip' | 'rar' | 'tar' | 'unknown' {
+  try {
+    if (fs.existsSync(filePath)) {
+      const fd = fs.openSync(filePath, 'r');
+      const buffer = Buffer.alloc(8);
+      const bytesRead = fs.readSync(fd, buffer, 0, 8, 0);
+      fs.closeSync(fd);
+      if (bytesRead >= 4) {
+        // 7-Zip: 7z\xBC\xAF\x27\x1C
+        if (buffer[0] === 0x37 && buffer[1] === 0x7a && buffer[2] === 0xbc && buffer[3] === 0xaf) {
+          return '7z';
+        }
+        // ZIP: PK\x03\x04 or PK\x05\x06 or PK\x07\x08
+        if (buffer[0] === 0x50 && buffer[1] === 0x4b) {
+          return 'zip';
+        }
+        // RAR: Rar!\x1A\x07
+        if (buffer[0] === 0x52 && buffer[1] === 0x61 && buffer[2] === 0x72 && buffer[3] === 0x21) {
+          return 'rar';
+        }
+      }
+    }
+  } catch {}
+  return 'unknown';
+}
+
+/**
+ * Recursively collect all files within a directory.
+ */
+function getAllFilesRecursive(dirPath: string, fileList: string[] = []): string[] {
+  if (!fs.existsSync(dirPath)) return fileList;
+  const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+  for (const entry of entries) {
+    const fullPath = path.join(dirPath, entry.name);
+    if (entry.isDirectory()) {
+      getAllFilesRecursive(fullPath, fileList);
+    } else if (entry.isFile()) {
+      fileList.push(fullPath);
+    }
+  }
+  return fileList;
+}
 
 export async function processZipArchive(
   zipFilePath: string,
@@ -49,10 +130,10 @@ export async function processZipArchive(
 
   // Run in background
   runZipExtraction(jobId, zipFilePath, zipOriginalName, targetFolderId, targetFolderUid).catch(async (err) => {
-    console.error(`[XorvilaBox ZIP Error] Job ${jobId} failed:`, err);
+    console.error(`[XorvilaBox Archive Error] Job ${jobId} failed:`, err);
     transferManager.unregisterCancelHandler(jobId);
 
-    const errorMsg = err.message || 'ZIP extraction failed';
+    const errorMsg = err.message || 'Archive extraction failed';
     const isCancelled = errorMsg.includes('cancelled');
 
     await db.execute({
@@ -80,7 +161,7 @@ export async function processZipArchive(
       });
     }
 
-    // Cleanup temporary zip file
+    // Cleanup temporary archive file
     if (fs.existsSync(zipFilePath)) {
       try { fs.unlinkSync(zipFilePath); } catch {}
     }
@@ -99,59 +180,182 @@ export async function runZipExtraction(
 ): Promise<void> {
   const db = getDb();
   const targetDir = getFolderStoragePath(targetFolderUid);
+  const stagingDir = path.join(targetDir, `.staging-${jobId}`);
 
   let isCancelled = false;
+  let activeProcess: ChildProcess | null = null;
   const createdDestPaths: string[] = [];
 
   transferManager.registerCancelHandler(jobId, () => {
     isCancelled = true;
+    if (activeProcess) {
+      try { activeProcess.kill('SIGTERM'); } catch {}
+    }
     // Clean up created extracted files so far
     for (const f of createdDestPaths) {
       if (fs.existsSync(f)) {
         try { fs.unlinkSync(f); } catch {}
       }
     }
-    // Clean up zip
+    // Clean up staging directory
+    if (fs.existsSync(stagingDir)) {
+      try { fs.rmSync(stagingDir, { recursive: true, force: true }); } catch {}
+    }
+    // Clean up archive
     if (fs.existsSync(zipFilePath)) {
       try { fs.unlinkSync(zipFilePath); } catch {}
     }
     throw new Error('Transfer cancelled by user');
   });
 
-  const zip = new AdmZip(zipFilePath);
-  const zipEntries = zip.getEntries();
-
-  // 1. Validation & Zip Slip Prevention & Bomb Detection
-  if (zipEntries.length > MAX_ZIP_FILES) {
-    throw new Error(`ZIP contains too many files (${zipEntries.length}). Maximum allowed is ${MAX_ZIP_FILES}`);
+  try {
+    fs.mkdirSync(stagingDir, { recursive: true });
+  } catch (err: any) {
+    throw new Error(`Failed to create staging directory: ${err.message}`);
   }
 
-  let totalUncompressedSize = 0;
-  for (const entry of zipEntries) {
+  // Detect real archive format from magic bytes (fixes .zip files that are actually 7z or RAR)
+  const realFormat = detectArchiveFormat(zipFilePath);
+  const sevenBinPath = get7zBinary();
+  const unzipBinPath = getUnzipBinary();
+
+  console.log(`[XorvilaBox Archive] Extracting Job ${jobId} (${zipOriginalName}) - detected format: ${realFormat}, 7za: ${sevenBinPath ? 'available' : 'none'}`);
+
+  let extractionSuccess = false;
+  let lastExtractionError = '';
+
+  // PRIMARY STRATEGY: 7za extraction (handles .7z, .zip, .rar, zip64, multi-GB streams without RAM bloat)
+  if (sevenBinPath && !isCancelled) {
+    try {
+      await new Promise<void>((resolve, reject) => {
+        // -y: answer yes to all prompts
+        // -p"": blank password to prevent hanging on encrypted archives
+        // -bd: disable progress indicator
+        const proc = spawn(sevenBinPath, ['x', '-y', '-p""', `-o${stagingDir}`, zipFilePath], {
+          stdio: ['ignore', 'pipe', 'pipe'],
+        });
+        activeProcess = proc;
+
+        let stderr = '';
+        proc.stderr?.on('data', (d) => { stderr += d.toString(); });
+        proc.stdout?.on('data', () => {});
+
+        proc.on('close', (code) => {
+          activeProcess = null;
+          if (code === 0) {
+            resolve();
+          } else {
+            reject(new Error(`7-Zip extraction returned code ${code}: ${stderr.trim() || 'Unknown error'}`));
+          }
+        });
+
+        proc.on('error', (err) => {
+          activeProcess = null;
+          reject(err);
+        });
+      });
+      extractionSuccess = true;
+    } catch (err: any) {
+      console.warn(`[XorvilaBox Archive] 7za extraction attempt failed:`, err.message);
+      lastExtractionError = err.message;
+    }
+  }
+
+  // SECONDARY STRATEGY: System unzip (if format is zip or 7za wasn't available)
+  if (!extractionSuccess && unzipBinPath && !isCancelled && realFormat !== '7z' && realFormat !== 'rar') {
+    try {
+      await new Promise<void>((resolve, reject) => {
+        const proc = spawn(unzipBinPath, ['-q', '-o', '-d', stagingDir, zipFilePath], {
+          stdio: ['ignore', 'pipe', 'pipe'],
+        });
+        activeProcess = proc;
+
+        let stderr = '';
+        proc.stderr?.on('data', (d) => { stderr += d.toString(); });
+
+        proc.on('close', (code) => {
+          activeProcess = null;
+          if (code === 0 || code === 1) { // 1 = warnings in unzip
+            resolve();
+          } else {
+            reject(new Error(`System unzip returned code ${code}: ${stderr.trim() || 'Unknown error'}`));
+          }
+        });
+
+        proc.on('error', (err) => {
+          activeProcess = null;
+          reject(err);
+        });
+      });
+      extractionSuccess = true;
+    } catch (err: any) {
+      console.warn(`[XorvilaBox Archive] unzip extraction attempt failed:`, err.message);
+      lastExtractionError = err.message;
+    }
+  }
+
+  // TERTIARY STRATEGY: AdmZip (pure JavaScript fallback for standard small zip files)
+  if (!extractionSuccess && !isCancelled && realFormat !== '7z' && realFormat !== 'rar') {
+    try {
+      const zip = new AdmZip(zipFilePath);
+      zip.extractAllTo(stagingDir, true);
+      extractionSuccess = true;
+    } catch (err: any) {
+      console.warn(`[XorvilaBox Archive] AdmZip extraction attempt failed:`, err.message);
+      lastExtractionError = err.message;
+    }
+  }
+
+  if (!extractionSuccess) {
+    // Clean up staging directory
+    if (fs.existsSync(stagingDir)) {
+      try { fs.rmSync(stagingDir, { recursive: true, force: true }); } catch {}
+    }
     if (isCancelled) throw new Error('Transfer cancelled by user');
-    totalUncompressedSize += entry.header.size;
-    if (totalUncompressedSize > MAX_TOTAL_UNCOMPRESSED_SIZE) {
-      throw new Error(`Uncompressed ZIP size exceeds safe limit of 25GB.`);
-    }
-
-    // Zip Slip check
-    const normalizedName = path.normalize(entry.entryName).replace(/^(\.\.(\/|\\|$))+/, '');
-    const resolvedPath = path.resolve(targetDir, normalizedName);
-    if (!resolvedPath.startsWith(path.resolve(targetDir))) {
-      throw new Error(`Malicious ZIP entry detected (Zip Slip): ${entry.entryName}`);
-    }
+    throw new Error(
+      realFormat === '7z'
+        ? `Archive is in 7-Zip (7z) format. Extraction failed: ${lastExtractionError || 'Unsupported compression algorithm'}`
+        : `Extraction failed: ${lastExtractionError || 'Invalid or unsupported archive format.'}`
+    );
   }
 
-  // 2. Intelligent Folder Hierarchy Unnesting
-  const validEntries = zipEntries.filter(e => !e.isDirectory && !e.entryName.startsWith('__MACOSX') && !path.basename(e.entryName).startsWith('.'));
-  const totalFiles = validEntries.length;
+  if (isCancelled) throw new Error('Transfer cancelled by user');
 
+  // Collect all extracted files from staging directory
+  const allStagedFiles = getAllFilesRecursive(stagingDir);
+
+  // Filter out system files, hidden files, and __MACOSX metadata
+  const validFiles = allStagedFiles.filter((filePath) => {
+    const filename = path.basename(filePath);
+    const rel = path.relative(stagingDir, filePath);
+    if (filename.startsWith('.') || filename === 'Thumbs.db' || filename === 'desktop.ini') return false;
+    if (rel.startsWith('__MACOSX') || rel.includes('/__MACOSX/')) return false;
+    return true;
+  });
+
+  if (validFiles.length > MAX_ZIP_FILES) {
+    if (fs.existsSync(stagingDir)) {
+      try { fs.rmSync(stagingDir, { recursive: true, force: true }); } catch {}
+    }
+    throw new Error(`Archive contains too many files (${validFiles.length}). Maximum allowed is ${MAX_ZIP_FILES}`);
+  }
+
+  const totalFiles = validFiles.length;
+  if (totalFiles === 0) {
+    if (fs.existsSync(stagingDir)) {
+      try { fs.rmSync(stagingDir, { recursive: true, force: true }); } catch {}
+    }
+    throw new Error('Archive contains no valid media or files to extract.');
+  }
+
+  // Detect common folder prefix to unnest single root folders (e.g. "S1 The Shiunji Family Children 1080p 7-12 HD/")
   let commonPrefix = '';
-  if (validEntries.length > 0) {
-    const firstParts = validEntries[0].entryName.split('/');
+  const relativeFilePaths = validFiles.map((f) => path.relative(stagingDir, f));
+  if (relativeFilePaths.length > 0) {
+    const firstParts = relativeFilePaths[0].split(path.sep);
     if (firstParts.length > 1) {
-      const candidate = firstParts[0] + '/';
-      const allShare = validEntries.every(e => e.entryName.startsWith(candidate));
+      const candidate = firstParts[0] + path.sep;
+      const allShare = relativeFilePaths.every((p) => p.startsWith(candidate));
       if (allShare) {
         commonPrefix = candidate;
       }
@@ -164,17 +368,17 @@ export async function runZipExtraction(
     args: [totalFiles, new Date().toISOString(), jobId],
   });
 
-  // Stage 2: Extracting files
+  // Stage 2: Moving extracted files into destination folder
   transferManager.emitProgress({
     jobId,
     type: jobType,
     filename: zipOriginalName,
     status: 'extracting',
-    stage: 'Stage 2: Extracting files...',
+    stage: 'Stage 2: Processing extracted files...',
     stageNumber: 2,
     totalStages: 6,
     downloaded_bytes: 0,
-    total_bytes: 0,
+    total_bytes: totalFiles,
     speed_bps: 0,
     percent: 0,
     extracted_files_count: 0,
@@ -193,11 +397,11 @@ export async function runZipExtraction(
     fileSize: number;
   }> = [];
 
-  // Perform extraction
-  for (let i = 0; i < validEntries.length; i++) {
+  for (let i = 0; i < validFiles.length; i++) {
     if (isCancelled) throw new Error('Transfer cancelled by user');
-    const entry = validEntries[i];
-    let relativeEntryName = entry.entryName;
+    const sourceFilePath = validFiles[i];
+    let relativeEntryName = path.relative(stagingDir, sourceFilePath);
+
     if (commonPrefix && relativeEntryName.startsWith(commonPrefix)) {
       relativeEntryName = relativeEntryName.substring(commonPrefix.length);
     }
@@ -218,9 +422,17 @@ export async function runZipExtraction(
       counter++;
     }
 
-    const content = entry.getData();
-    fs.writeFileSync(destPath, content);
+    // Move file from staging to final target directory
+    try {
+      fs.renameSync(sourceFilePath, destPath);
+    } catch {
+      // Fallback if crossing partitions
+      fs.copyFileSync(sourceFilePath, destPath);
+      try { fs.unlinkSync(sourceFilePath); } catch {}
+    }
     createdDestPaths.push(destPath);
+
+    const fileSize = fs.existsSync(destPath) ? fs.statSync(destPath).size : 0;
 
     extractedItems.push({
       safeFileName,
@@ -228,11 +440,11 @@ export async function runZipExtraction(
       destPath,
       relativeEntryName,
       ext,
-      fileSize: content.length,
+      fileSize,
     });
 
-    // Update extraction progress periodically
-    if (i % 3 === 0 || i === validEntries.length - 1) {
+    // Update extraction progress
+    if (i % 3 === 0 || i === validFiles.length - 1) {
       const pct = Math.round(((i + 1) / totalFiles) * 100);
       await db.execute({
         sql: `UPDATE import_jobs SET extracted_files_count = ?, current_file = ?, updated_at = ? WHERE id = ?`,
@@ -244,7 +456,7 @@ export async function runZipExtraction(
         type: jobType,
         filename: zipOriginalName,
         status: 'extracting',
-        stage: `Stage 2: Extracting files (${extractedItems.length} / ${totalFiles})`,
+        stage: `Stage 2: Extracted files (${extractedItems.length} / ${totalFiles})`,
         stageNumber: 2,
         totalStages: 6,
         downloaded_bytes: extractedItems.length,
@@ -259,6 +471,11 @@ export async function runZipExtraction(
         updated_at: new Date().toISOString(),
       });
     }
+  }
+
+  // Cleanup staging directory
+  if (fs.existsSync(stagingDir)) {
+    try { fs.rmSync(stagingDir, { recursive: true, force: true }); } catch {}
   }
 
   // Stage 3: Scanning files
@@ -289,7 +506,7 @@ export async function runZipExtraction(
 
   // Stage 4: Detecting episodes
   if (isCancelled) throw new Error('Transfer cancelled by user');
-  const parsedItems = extractedItems.map(item => {
+  const parsedItems = extractedItems.map((item) => {
     const animeMeta = parseAnimeFilename(item.storedName, item.relativeEntryName);
     return {
       ...item,
@@ -297,7 +514,7 @@ export async function runZipExtraction(
     };
   });
 
-  const episodeCount = parsedItems.filter(p => p.animeMeta.isAnimeEpisode).length;
+  const episodeCount = parsedItems.filter((p) => p.animeMeta.isAnimeEpisode).length;
 
   await db.execute({
     sql: `UPDATE import_jobs SET status = 'detecting', stage = 'Stage 4: Detecting episodes...', detected_episodes_count = ?, updated_at = ? WHERE id = ?`,
@@ -379,7 +596,7 @@ export async function runZipExtraction(
     }
   }
 
-  // Cleanup ZIP file on VPS
+  // Cleanup archive file on VPS
   if (fs.existsSync(zipFilePath)) {
     try { fs.unlinkSync(zipFilePath); } catch {}
   }

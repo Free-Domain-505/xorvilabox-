@@ -23,33 +23,51 @@ function isPrivateIp(hostname: string): boolean {
   return false;
 }
 
-// Inspect downloaded file for ZIP archive format:
-// 1. File extension (.zip)
-// 2. Content-Type header (application/zip, application/x-zip-compressed, multipart/x-zip, etc.)
-// 3. Magic bytes: PK\x03\x04 (0x50 0x4B 0x03 0x04) or PK\x05\x06 (0x50 0x4B 0x05 0x06) or PK\x07\x08 (0x50 0x4B 0x07 0x08)
-function checkIsZipArchive(filePath: string, filename: string, contentType?: string): boolean {
+/**
+ * Inspect downloaded file to determine if it is an archive package:
+ * 1. File extension (.zip, .7z, .rar, .tar, .gz, .tgz, .bz2, .xz)
+ * 2. Content-Type header
+ * 3. File magic bytes:
+ *    - 7-Zip: 7z\xBC\xAF\x27\x1C (0x37 0x7A 0xBC 0xAF)
+ *    - ZIP: PK\x03\x04 (0x50 0x4B 0x03 0x04) or PK\x05\x06 or PK\x07\x08
+ *    - RAR: Rar!\x1A\x07 (0x52 0x61 0x72 0x21)
+ *    - GZIP: 0x1F 0x8B
+ */
+function checkIsArchivePackage(filePath: string, filename: string, contentType?: string): boolean {
   const ext = path.extname(filename).toLowerCase();
-  if (ext === '.zip') return true;
+  if (['.zip', '.7z', '.rar', '.tar', '.gz', '.tgz', '.bz2', '.xz'].includes(ext)) {
+    return true;
+  }
+
   if (contentType) {
     const ct = contentType.toLowerCase();
     if (
       ct.includes('application/zip') ||
       ct.includes('application/x-zip-compressed') ||
       ct.includes('multipart/x-zip') ||
-      ct.includes('application/x-zip')
+      ct.includes('application/x-zip') ||
+      ct.includes('application/x-7z-compressed') ||
+      ct.includes('application/x-rar-compressed') ||
+      ct.includes('application/x-tar') ||
+      ct.includes('application/gzip')
     ) {
       return true;
     }
   }
 
-  // Magic bytes check
+  // Magic bytes check (detects archives even if served as application/octet-stream or without extension)
   try {
     if (fs.existsSync(filePath)) {
       const fd = fs.openSync(filePath, 'r');
-      const buffer = Buffer.alloc(4);
-      const bytesRead = fs.readSync(fd, buffer, 0, 4, 0);
+      const buffer = Buffer.alloc(8);
+      const bytesRead = fs.readSync(fd, buffer, 0, 8, 0);
       fs.closeSync(fd);
       if (bytesRead >= 4) {
+        // 7-Zip: 7z\xBC\xAF\x27\x1C (e.g. Cloudflare R2 archive with .zip extension)
+        if (buffer[0] === 0x37 && buffer[1] === 0x7a && buffer[2] === 0xbc && buffer[3] === 0xaf) {
+          return true;
+        }
+        // ZIP: PK\x03\x04, PK\x05\x06, PK\x07\x08
         if (
           buffer[0] === 0x50 &&
           buffer[1] === 0x4b &&
@@ -57,6 +75,14 @@ function checkIsZipArchive(filePath: string, filename: string, contentType?: str
             (buffer[2] === 0x05 && buffer[3] === 0x06) ||
             (buffer[2] === 0x07 && buffer[3] === 0x08))
         ) {
+          return true;
+        }
+        // RAR: Rar!\x1A\x07
+        if (buffer[0] === 0x52 && buffer[1] === 0x61 && buffer[2] === 0x72 && buffer[3] === 0x21) {
+          return true;
+        }
+        // GZIP: \x1F\x8B
+        if (buffer[0] === 0x1f && buffer[1] === 0x8b) {
           return true;
         }
       }
@@ -179,7 +205,7 @@ async function downloadUrlToStorage(
       sourceUrl,
       {
         headers: {
-          'User-Agent': 'XorvilaBox/1.0 (+https://xorvilabox.vps)',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
           Accept: '*/*',
         },
       },
@@ -257,6 +283,16 @@ async function downloadUrlToStorage(
           }
         });
 
+        res.on('error', (err) => {
+          if (writeStream) {
+            try { writeStream.close(); } catch {}
+          }
+          if (fs.existsSync(tempFilePath)) {
+            try { fs.unlinkSync(tempFilePath); } catch {}
+          }
+          reject(new Error(`Remote stream error: ${err.message}`));
+        });
+
         res.pipe(writeStream);
 
         writeStream.on('finish', async () => {
@@ -264,22 +300,28 @@ async function downloadUrlToStorage(
           try {
             transferManager.unregisterCancelHandler(jobId);
 
-            // Step 7: Inspect downloaded file for ZIP archive format
+            // Verify completed download size if totalBytes was provided by server
+            if (totalBytes > 0 && downloadedBytes < totalBytes) {
+              if (fs.existsSync(tempFilePath)) {
+                try { fs.unlinkSync(tempFilePath); } catch {}
+              }
+              reject(new Error(`Download interrupted: received ${downloadedBytes} of ${totalBytes} bytes. Connection closed early.`));
+              return;
+            }
+
+            // Inspect downloaded file for archive format (ZIP, 7z, RAR, TAR)
             const contentType = res.headers['content-type'];
-            const isZip = checkIsZipArchive(tempFilePath, finalFilename, contentType);
+            const isArchive = checkIsArchivePackage(tempFilePath, finalFilename, contentType);
 
-            if (isZip) {
-              console.log(`[XorvilaBox URL Import] Detected ZIP archive for Job ${jobId} (${finalFilename}). Starting VPS extraction pipeline...`);
+            if (isArchive) {
+              console.log(`[XorvilaBox URL Import] Detected archive format for Job ${jobId} (${finalFilename}). Starting VPS multi-format extraction pipeline...`);
 
-              // Step 8: Automatically transition into the full ZIP processing pipeline on VPS
-              // Stage 1 was Downloading (now 100% complete)
-              // Stage 2 will be Extracting files...
               await db.execute({
                 sql: `UPDATE import_jobs SET status = 'extracting', stage = 'Stage 2: Extracting files...', updated_at = ? WHERE id = ?`,
                 args: [new Date().toISOString(), jobId],
               });
 
-              // Execute VPS extraction, scanning, episode detection, database registration, and cleanup
+              // Execute VPS archive extraction (handles 7z, zip, zip64, rar, tar without memory exhaustion)
               await runZipExtraction(
                 jobId,
                 tempFilePath,
@@ -293,7 +335,7 @@ async function downloadUrlToStorage(
               return;
             }
 
-            // Step 9: If NOT a ZIP archive, process as single file import
+            // If NOT an archive, process as single file import
             const ext = path.extname(finalFilename) || '.mkv';
             let storedName = `${finalFilename}`;
             let destPath = path.join(targetDir, storedName);
@@ -414,9 +456,10 @@ async function downloadUrlToStorage(
       reject(err);
     });
 
-    req.setTimeout(600000, () => {
+    // 1 hour timeout for large multi-gigabyte files
+    req.setTimeout(3600000, () => {
       req.destroy();
-      reject(new Error('Connection timed out after 10 minutes'));
+      reject(new Error('Connection timed out after 60 minutes'));
     });
   });
 }

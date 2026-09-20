@@ -95,7 +95,7 @@ fi
 # ------------------------------------------------------------------------------
 echo -e "\n${BLUE}➤ [1/6] Updating system and installing essential tools...${NC}"
 apt-get update -qq
-DEBIAN_FRONTEND=noninteractive apt-get install -y -qq curl git build-essential openssl
+DEBIAN_FRONTEND=noninteractive apt-get install -y -qq curl git build-essential openssl p7zip-full unzip
 
 # Disable and remove Nginx completely (Cloudflare Tunnel connects directly to Node on port 3000)
 echo -e "${BLUE}➤ Ensuring Nginx is stopped and removed...${NC}"
