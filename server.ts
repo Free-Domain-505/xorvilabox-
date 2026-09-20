@@ -95,15 +95,25 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
-    const distPath = path.join(process.cwd(), 'dist');
+    const distPath = (typeof __dirname !== 'undefined' && fs.existsSync(path.join(__dirname, 'index.html')))
+      ? __dirname
+      : path.join(process.cwd(), 'dist');
     app.use(express.static(distPath));
     app.get('*', (_req: Request, res: Response) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }
 
+  // Global error handler
+  app.use((err: any, _req: Request, res: Response, _next: any) => {
+    console.error('[XorvilaBox Server Error]', err);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Internal Server Error', message: err?.message || String(err) });
+    }
+  });
+
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`[XorvilaBox] Production server running on http://0.0.0.0:${PORT}`);
+    console.log(`[XorvilaBox] Server running on http://0.0.0.0:${PORT}`);
   });
 }
 

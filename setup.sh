@@ -95,7 +95,16 @@ fi
 # ------------------------------------------------------------------------------
 echo -e "\n${BLUE}➤ [1/6] Updating system and installing essential tools...${NC}"
 apt-get update -qq
-DEBIAN_FRONTEND=noninteractive apt-get install -y -qq curl git build-essential ufw openssl
+DEBIAN_FRONTEND=noninteractive apt-get install -y -qq curl git build-essential openssl
+
+# Disable and remove Nginx completely (Cloudflare Tunnel connects directly to Node on port 3000)
+echo -e "${BLUE}➤ Ensuring Nginx is stopped and removed...${NC}"
+if command -v systemctl >/dev/null 2>&1; then
+  systemctl stop nginx 2>/dev/null || true
+  systemctl disable nginx 2>/dev/null || true
+fi
+apt-get purge -y -qq nginx nginx-common nginx-core 2>/dev/null || true
+apt-get autoremove -y -qq 2>/dev/null || true
 
 # Check / Install Node.js 20
 NEED_NODE=true
@@ -182,11 +191,22 @@ echo -e "${GREEN}✓ Build succeeded.${NC}"
 # ------------------------------------------------------------------------------
 echo -e "\n${BLUE}➤ [6/6] Starting XorvilaBox with PM2 (Auto-boot enabled)...${NC}"
 pm2 delete xorvilabox 2>/dev/null || true
-NODE_ENV=production pm2 start dist/server.cjs --name "xorvilabox" --update-env
+NODE_ENV=production pm2 start dist/server.cjs --name "xorvilabox" --cwd "/var/www/xorvilabox" --update-env
 pm2 save
 
 # Setup PM2 startup script automatically
 env PATH=$PATH:/usr/bin /usr/lib/node_modules/pm2/bin/pm2 startup systemd -u root --hp /root >/dev/null 2>&1 || true
+
+# Test local connectivity on port 3000
+echo -e "\n${BLUE}➤ Verifying local server response on port 3000...${NC}"
+sleep 2
+HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:3000/api/health || echo "FAILED")
+if [ "$HTTP_CODE" = "200" ]; then
+  echo -e "${GREEN}✓ Local server is responding on http://127.0.0.1:3000 (HTTP 200 OK).${NC}"
+else
+  echo -e "${ORANGE}⚠ Local response code: $HTTP_CODE (checking PM2 logs below)${NC}"
+  pm2 logs xorvilabox --lines 15 --nostream || true
+fi
 
 # ------------------------------------------------------------------------------
 # 8. Finished!
@@ -200,10 +220,11 @@ echo -e "  🔑 Admin Password:   ${CYAN}${ADMIN_PASS}${NC}"
 echo -e "  📂 Video Storage:    ${CYAN}/var/lib/xorvilabox/storage${NC}"
 echo -e "  🗄️ Database:         ${CYAN}/var/www/xorvilabox/data/xorvilabox.db${NC}"
 echo -e ""
-echo -e "${ORANGE}Cloudflare Tunnel Configuration Reminder:${NC}"
-echo -e "  In your Cloudflare Zero Trust Dashboard, configure your Public Hostname:"
-echo -e "  • Service: ${CYAN}HTTP${NC}"
-echo -e "  • URL:     ${CYAN}localhost:3000${NC} (or 127.0.0.1:3000)"
+echo -e "${RED}⚠️  IMPORTANT: CLOUDFLARE TUNNEL SETTINGS${NC}"
+echo -e "  In your Cloudflare Zero Trust dashboard under your Tunnel's Public Hostname:"
+echo -e "  • Type:    ${GREEN}HTTP${NC} (DO NOT choose HTTPS - selecting HTTPS causes an infinite loading loop!)"
+echo -e "  • URL:     ${GREEN}127.0.0.1:3000${NC} (or localhost:3000)"
+echo -e "  • Path:    (leave blank)"
 echo -e ""
 echo -e "${PURPLE}Useful Management Commands:${NC}"
 echo -e "  • View live server logs:  ${CYAN}pm2 logs xorvilabox${NC}"
