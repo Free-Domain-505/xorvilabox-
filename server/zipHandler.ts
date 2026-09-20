@@ -2,7 +2,7 @@ import AdmZip from 'adm-zip';
 import path from 'path';
 import fs from 'fs';
 import crypto from 'crypto';
-import { spawn, type ChildProcess } from 'child_process';
+import { spawn, execSync, type ChildProcess } from 'child_process';
 import sevenBin from '7zip-bin';
 import { getDb } from './db.js';
 import { getFolderStoragePath, sanitizeFilename, getMimeType } from './storage.js';
@@ -13,7 +13,7 @@ const MAX_ZIP_FILES = 5000;
 
 /**
  * Locate a working 7za or 7z binary.
- * Ensures the binary has execution permissions (+x).
+ * Checks bundled 7zip-bin, system PATH via `which`, and standard Linux locations.
  */
 function get7zBinary(): string | null {
   try {
@@ -25,7 +25,26 @@ function get7zBinary(): string | null {
     }
   } catch {}
 
-  for (const bin of ['/usr/bin/7za', '/usr/bin/7z', '/usr/local/bin/7za', '7za', '7z']) {
+  try {
+    const which = execSync('which 7z || which 7za || which 7zr || command -v 7z || command -v 7za', {
+      stdio: ['ignore', 'pipe', 'ignore'],
+    })
+      .toString()
+      .trim();
+    if (which && fs.existsSync(which)) {
+      return which;
+    }
+  } catch {}
+
+  for (const bin of [
+    '/usr/bin/7z',
+    '/usr/bin/7za',
+    '/usr/bin/7zr',
+    '/usr/local/bin/7z',
+    '/usr/local/bin/7za',
+    '/bin/7z',
+    '/bin/7za',
+  ]) {
     try {
       if (fs.existsSync(bin)) return bin;
     } catch {}
@@ -37,7 +56,18 @@ function get7zBinary(): string | null {
  * Locate system unzip binary.
  */
 function getUnzipBinary(): string | null {
-  for (const bin of ['/usr/bin/unzip', '/usr/local/bin/unzip', 'unzip']) {
+  try {
+    const which = execSync('which unzip || command -v unzip', {
+      stdio: ['ignore', 'pipe', 'ignore'],
+    })
+      .toString()
+      .trim();
+    if (which && fs.existsSync(which)) {
+      return which;
+    }
+  } catch {}
+
+  for (const bin of ['/usr/bin/unzip', '/usr/local/bin/unzip', '/bin/unzip']) {
     try {
       if (fs.existsSync(bin)) return bin;
     } catch {}
@@ -229,23 +259,23 @@ export async function runZipExtraction(
     try {
       await new Promise<void>((resolve, reject) => {
         // -y: answer yes to all prompts
-        // -p"": blank password to prevent hanging on encrypted archives
+        // -p-: do not prompt for password (fail or proceed as unencrypted)
         // -bd: disable progress indicator
-        const proc = spawn(sevenBinPath, ['x', '-y', '-p""', `-o${stagingDir}`, zipFilePath], {
+        const proc = spawn(sevenBinPath, ['x', '-y', '-p-', `-o${stagingDir}`, zipFilePath], {
           stdio: ['ignore', 'pipe', 'pipe'],
         });
         activeProcess = proc;
 
-        let stderr = '';
-        proc.stderr?.on('data', (d) => { stderr += d.toString(); });
-        proc.stdout?.on('data', () => {});
+        let output = '';
+        proc.stdout?.on('data', (d) => { output += d.toString(); });
+        proc.stderr?.on('data', (d) => { output += d.toString(); });
 
         proc.on('close', (code) => {
           activeProcess = null;
           if (code === 0) {
             resolve();
           } else {
-            reject(new Error(`7-Zip extraction returned code ${code}: ${stderr.trim() || 'Unknown error'}`));
+            reject(new Error(`7-Zip exited with code ${code}: ${output.trim() || 'Extraction failed'}`));
           }
         });
 
@@ -270,15 +300,16 @@ export async function runZipExtraction(
         });
         activeProcess = proc;
 
-        let stderr = '';
-        proc.stderr?.on('data', (d) => { stderr += d.toString(); });
+        let output = '';
+        proc.stdout?.on('data', (d) => { output += d.toString(); });
+        proc.stderr?.on('data', (d) => { output += d.toString(); });
 
         proc.on('close', (code) => {
           activeProcess = null;
           if (code === 0 || code === 1) { // 1 = warnings in unzip
             resolve();
           } else {
-            reject(new Error(`System unzip returned code ${code}: ${stderr.trim() || 'Unknown error'}`));
+            reject(new Error(`System unzip exited with code ${code}: ${output.trim() || 'Extraction failed'}`));
           }
         });
 
@@ -312,11 +343,13 @@ export async function runZipExtraction(
       try { fs.rmSync(stagingDir, { recursive: true, force: true }); } catch {}
     }
     if (isCancelled) throw new Error('Transfer cancelled by user');
-    throw new Error(
-      realFormat === '7z'
-        ? `Archive is in 7-Zip (7z) format. Extraction failed: ${lastExtractionError || 'Unsupported compression algorithm'}`
-        : `Extraction failed: ${lastExtractionError || 'Invalid or unsupported archive format.'}`
-    );
+
+    let errorDetails = lastExtractionError || 'Archive extraction failed.';
+    if (errorDetails.includes('No END header found') || errorDetails.includes('Invalid or unsupported zip format')) {
+      errorDetails = `Zip archive format unsupported or corrupted (often Zip64 or 7-Zip). Please install 7-Zip on your VPS by running: sudo apt-get update && sudo apt-get install -y p7zip-full unzip`;
+    }
+
+    throw new Error(errorDetails);
   }
 
   if (isCancelled) throw new Error('Transfer cancelled by user');
