@@ -134,10 +134,11 @@ mkdir -p /var/www/xorvilabox/data
 # ------------------------------------------------------------------------------
 echo -e "\n${BLUE}➤ [3/6] Fetching project code from GitHub...${NC}"
 if [ -d "/var/www/xorvilabox/.git" ]; then
-  echo -e "Existing repository found in /var/www/xorvilabox. Pulling latest..."
+  echo -e "Existing repository found in /var/www/xorvilabox. Updating to latest..."
   cd /var/www/xorvilabox
   git remote set-url origin "$REPO_URL"
-  git pull || true
+  git fetch origin || true
+  git reset --hard origin/HEAD 2>/dev/null || git pull || true
 else
   rm -rf /var/www/xorvilabox/*
   mkdir -p /var/www/xorvilabox
@@ -152,6 +153,7 @@ echo -e "\n${BLUE}➤ [4/6] Creating production .env file...${NC}"
 SESSION_KEY=$(openssl rand -hex 32)
 
 cat > /var/www/xorvilabox/.env << EOF
+NODE_ENV=production
 PORT=3000
 STORAGE_PATH=/var/lib/xorvilabox/storage
 DATABASE_URL=file:/var/www/xorvilabox/data/xorvilabox.db
@@ -170,7 +172,7 @@ echo -e "${GREEN}✓ .env configured with Cloudflare Tunnel URL: ${TUNNEL_URL}${
 # ------------------------------------------------------------------------------
 echo -e "\n${BLUE}➤ [5/6] Installing npm dependencies and building frontend + backend...${NC}"
 cd /var/www/xorvilabox
-npm install --no-audit --no-fund
+npm install --legacy-peer-deps --no-audit --no-fund
 npm run build
 
 echo -e "${GREEN}✓ Build succeeded.${NC}"
@@ -180,7 +182,7 @@ echo -e "${GREEN}✓ Build succeeded.${NC}"
 # ------------------------------------------------------------------------------
 echo -e "\n${BLUE}➤ [6/6] Starting XorvilaBox with PM2 (Auto-boot enabled)...${NC}"
 pm2 delete xorvilabox 2>/dev/null || true
-pm2 start dist/server.cjs --name "xorvilabox"
+NODE_ENV=production pm2 start dist/server.cjs --name "xorvilabox" --update-env
 pm2 save
 
 # Setup PM2 startup script automatically

@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import express, { type Request, type Response } from 'express';
 import cookieParser from 'cookie-parser';
 import path from 'path';
@@ -89,7 +90,7 @@ async function startServer() {
   // Vite middleware for development vs static build for production
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
-      server: { middlewareMode: true, port: PORT, host: '0.0.0.0' },
+      server: { middlewareMode: true, port: PORT, host: '0.0.0.0', allowedHosts: true },
       appType: 'spa',
     });
     app.use(vite.middlewares);
