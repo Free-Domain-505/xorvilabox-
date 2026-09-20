@@ -42,18 +42,18 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-md w-full p-6 shadow-2xl relative text-zinc-100">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm animate-in fade-in duration-150">
+      <div className="bg-zinc-950 border border-zinc-800 rounded-2xl max-w-md w-full p-6 shadow-2xl shadow-black/80 relative text-zinc-100">
         
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+          className="absolute top-4 right-4 p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-900 active:scale-95 transition-all"
         >
           <X className="w-5 h-5" />
         </button>
 
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-xl bg-rose-600/20 border border-rose-500/30 flex items-center justify-center text-rose-400">
+          <div className="w-10 h-10 rounded-xl bg-rose-950/40 border border-rose-800/60 flex items-center justify-center text-rose-400 shadow-inner">
             <AlertTriangle className="w-5 h-5" />
           </div>
           <div>
@@ -64,7 +64,7 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
           </div>
         </div>
 
-        <div className="p-3 bg-zinc-950 border border-zinc-800 rounded-xl mb-4 text-xs">
+        <div className="p-3 bg-zinc-900/70 border border-zinc-800 rounded-xl mb-4 text-xs">
           <p className="text-zinc-300">
             Are you sure you want to permanently delete:
           </p>
@@ -80,17 +80,17 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
 
         {error && <p className="text-xs text-rose-400 mb-3">{error}</p>}
 
-        <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-zinc-800">
+        <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-zinc-800/80">
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold"
+            className="px-4 py-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 active:scale-95 text-zinc-300 text-xs font-semibold border border-zinc-800 transition-all"
           >
             Cancel
           </button>
           <button
             onClick={handleDelete}
             disabled={loading}
-            className="px-5 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 disabled:bg-zinc-800 text-white text-xs font-semibold shadow-md shadow-rose-600/20 flex items-center gap-1.5"
+            className="px-5 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 active:bg-rose-700 active:scale-95 disabled:bg-zinc-800 text-white text-xs font-bold shadow-md shadow-rose-950/40 flex items-center gap-1.5 transition-all"
           >
             {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
             <span>Delete Permanently</span>

@@ -71,20 +71,20 @@ export const TransferItemCard: React.FC<TransferItemCardProps> = ({
     }
     if (item.type === 'zip' || isZipStage) {
       return (
-        <div className="w-8 h-8 rounded-lg bg-orange-600/20 border border-orange-500/30 flex items-center justify-center text-orange-400 shrink-0">
+        <div className="w-8 h-8 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center text-orange-400 shrink-0 shadow-inner">
           <FileArchive className="w-4 h-4" />
         </div>
       );
     }
     if (item.type === 'url') {
       return (
-        <div className="w-8 h-8 rounded-lg bg-orange-600/20 border border-orange-500/30 flex items-center justify-center text-orange-400 shrink-0">
+        <div className="w-8 h-8 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center text-orange-400 shrink-0 shadow-inner">
           <Download className="w-4 h-4" />
         </div>
       );
     }
     return (
-      <div className="w-8 h-8 rounded-lg bg-orange-600/20 border border-orange-500/30 flex items-center justify-center text-orange-400 shrink-0">
+      <div className="w-8 h-8 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center text-orange-400 shrink-0 shadow-inner">
         <Upload className="w-4 h-4" />
       </div>
     );
@@ -167,7 +167,7 @@ export const TransferItemCard: React.FC<TransferItemCardProps> = ({
       (item.type === 'url' && item.status === 'downloading' && item.total === 0));
 
   return (
-    <div className="bg-zinc-900/90 hover:bg-zinc-900 border border-zinc-800 rounded-xl p-3.5 transition-all text-zinc-100 shadow-sm">
+    <div className="bg-zinc-900/60 hover:bg-zinc-900 border border-zinc-800 rounded-xl p-3.5 transition-all text-zinc-100 shadow-sm">
       
       {/* Header row: Icon, Filename, Status Badge */}
       <div className="flex items-start gap-3 mb-2.5">
@@ -189,7 +189,7 @@ export const TransferItemCard: React.FC<TransferItemCardProps> = ({
             {item.targetFolderName && (
               <>
                 <span>•</span>
-                <span className="truncate">Folder: {item.targetFolderName}</span>
+                <span className="truncate text-orange-400/80">Folder: {item.targetFolderName}</span>
               </>
             )}
           </div>
@@ -198,7 +198,7 @@ export const TransferItemCard: React.FC<TransferItemCardProps> = ({
 
       {/* Stage details / error description */}
       {item.stage && (
-        <p className="text-[11px] text-zinc-300 font-medium mb-2 truncate">
+        <p className="text-[11px] text-orange-400 font-medium mb-2 truncate">
           {item.stage}
         </p>
       )}
@@ -213,12 +213,12 @@ export const TransferItemCard: React.FC<TransferItemCardProps> = ({
       {/* Progress Bar for Active Transfers */}
       {isActive && (
         <div className="mb-2.5">
-          <div className="w-full h-1.5 bg-zinc-800 rounded-full overflow-hidden relative">
+          <div className="w-full h-1.5 bg-black/80 border border-zinc-800 rounded-full overflow-hidden relative">
             {isIndeterminate ? (
               <div className="h-full bg-gradient-to-r from-orange-500 to-amber-400 rounded-full animate-pulse w-full" />
             ) : (
               <div
-                className="h-full bg-orange-500 rounded-full transition-all duration-300 ease-out"
+                className="h-full bg-orange-500 rounded-full transition-all duration-300 ease-out shadow-sm shadow-orange-500"
                 style={{ width: `${Math.min(100, Math.max(0, item.percent))}%` }}
               />
             )}
@@ -253,7 +253,7 @@ export const TransferItemCard: React.FC<TransferItemCardProps> = ({
           {/* Time Remaining row */}
           {item.speed > 0 && item.total > 0 && (
             <p className="text-[10px] text-zinc-500 mt-1">
-              Estimated time remaining: <span className="text-zinc-400">{timeRemainingStr}</span>
+              Estimated time remaining: <span className="text-zinc-300">{timeRemainingStr}</span>
             </p>
           )}
         </div>
@@ -261,18 +261,18 @@ export const TransferItemCard: React.FC<TransferItemCardProps> = ({
 
       {/* Completed file size badge */}
       {isCompleted && (
-        <div className="flex items-center justify-between text-[11px] text-zinc-400 mb-2.5 pt-1 border-t border-zinc-800/60 font-mono">
+        <div className="flex items-center justify-between text-[11px] text-zinc-400 mb-2.5 pt-1 border-t border-zinc-800/80 font-mono">
           <span>{formatBytes(item.total || item.loaded)}</span>
           <span className="text-emerald-400 font-medium">Uploaded successfully</span>
         </div>
       )}
 
       {/* Action Buttons */}
-      <div className="flex items-center justify-end gap-2 pt-2 border-t border-zinc-800/60">
+      <div className="flex items-center justify-end gap-2 pt-2 border-t border-zinc-800/80">
         {isActive && item.canCancel && (
           <button
             onClick={() => onRequestCancel(item)}
-            className="px-2.5 py-1 rounded-md bg-zinc-800 hover:bg-rose-950/60 hover:text-rose-400 text-zinc-300 text-xs font-medium transition-colors"
+            className="px-2.5 py-1 rounded-md bg-zinc-900 border border-zinc-800 hover:border-rose-700/60 hover:bg-rose-950/40 hover:text-rose-400 active:scale-95 text-zinc-300 text-xs font-medium transition-all"
           >
             Cancel
           </button>
@@ -283,7 +283,7 @@ export const TransferItemCard: React.FC<TransferItemCardProps> = ({
             {onOpenFolder && (
               <button
                 onClick={() => onOpenFolder(item.targetFolderId || null)}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium transition-colors"
+                className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 active:scale-95 text-zinc-200 text-xs font-medium transition-all"
               >
                 <FolderOpen className="w-3 h-3 text-orange-400" />
                 <span>Open Folder</span>
@@ -292,7 +292,7 @@ export const TransferItemCard: React.FC<TransferItemCardProps> = ({
             {item.file?.raw_url && onCopyRawUrl && (
               <button
                 onClick={() => onCopyRawUrl(item.file!.raw_url)}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-orange-600/20 hover:bg-orange-600/30 text-orange-400 text-xs font-semibold transition-colors border border-orange-500/30"
+                className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-orange-600/20 hover:bg-orange-600/30 active:scale-95 text-orange-400 text-xs font-bold transition-all border border-orange-500/30"
               >
                 <Copy className="w-3 h-3" />
                 <span>Copy Raw URL</span>
@@ -300,7 +300,7 @@ export const TransferItemCard: React.FC<TransferItemCardProps> = ({
             )}
             <button
               onClick={() => onRemove(item.id)}
-              className="p-1 rounded-md text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800 transition-colors"
+              className="p-1 rounded-md text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900 active:scale-95 transition-all"
               title="Dismiss"
             >
               <Trash2 className="w-3.5 h-3.5" />
@@ -313,7 +313,7 @@ export const TransferItemCard: React.FC<TransferItemCardProps> = ({
             {item.canRetry && (
               <button
                 onClick={() => onRetry(item.id)}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-orange-600 hover:bg-orange-500 text-white text-xs font-semibold transition-colors shadow-sm"
+                className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-orange-600 hover:bg-orange-500 active:bg-orange-700 active:scale-95 text-white text-xs font-bold transition-all shadow-md shadow-orange-950/30"
               >
                 <RotateCcw className="w-3 h-3" />
                 <span>Retry</span>
@@ -321,7 +321,7 @@ export const TransferItemCard: React.FC<TransferItemCardProps> = ({
             )}
             <button
               onClick={() => onRemove(item.id)}
-              className="px-2.5 py-1 rounded-md bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-medium transition-colors"
+              className="px-2.5 py-1 rounded-md bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 active:scale-95 text-zinc-300 text-xs font-medium transition-all"
             >
               Remove
             </button>
@@ -331,7 +331,7 @@ export const TransferItemCard: React.FC<TransferItemCardProps> = ({
         {isCancelled && (
           <button
             onClick={() => onRemove(item.id)}
-            className="px-2.5 py-1 rounded-md bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-medium transition-colors"
+            className="px-2.5 py-1 rounded-md bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 active:scale-95 text-zinc-300 text-xs font-medium transition-all"
           >
             Remove
           </button>

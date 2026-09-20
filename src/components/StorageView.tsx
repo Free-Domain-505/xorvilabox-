@@ -71,24 +71,34 @@ export const StorageView: React.FC<StorageViewProps> = ({ onShowToast }) => {
       </div>
 
       {/* Visual Storage Bar (Section 19) */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-xl">
-        <div className="flex items-center justify-between text-xs font-medium text-zinc-300 mb-3">
-          <div className="flex items-center gap-2">
-            <span className="font-semibold text-white">VPS Mount Point:</span>
-            <span className="font-mono text-orange-400">{disk?.storagePath || '/var/lib/xorvilabox/storage'}</span>
+      <div className="bg-zinc-950/90 border border-zinc-800/90 rounded-2xl p-6 shadow-xl shadow-black/40 backdrop-blur-md">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs font-medium text-zinc-300 mb-3 gap-2">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+            <div className="flex items-center gap-1.5">
+              <span className="font-semibold text-white">VPS Host:</span>
+              <span className="font-mono text-orange-400 bg-zinc-900 px-2 py-0.5 rounded border border-zinc-800">{disk?.vpsHostname || 'localhost'}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="font-semibold text-zinc-400">Device:</span>
+              <span className="font-mono text-zinc-300">{disk?.filesystem || '/dev/root'}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="font-semibold text-zinc-400">Mount:</span>
+              <span className="font-mono text-orange-400">{disk?.mountPoint || '/'}</span>
+            </div>
           </div>
-          <div className="font-mono text-sm">
+          <div className="font-mono text-sm self-end sm:self-auto">
             <span className="text-orange-500 font-bold">{formatBytes(usedBytes)}</span>
             <span className="text-zinc-500"> / </span>
             <span className="text-zinc-300 font-bold">{formatBytes(totalBytes)}</span>
-            <span className="text-zinc-500 text-xs ml-1.5">({usedPercent}% Used)</span>
+            <span className="text-orange-400/80 text-xs ml-1.5 font-sans">({usedPercent}% Used)</span>
           </div>
         </div>
 
         {/* Real Visual Bar: Orange color for used space, Black/gray for remaining space */}
         <div className="w-full h-5 bg-black rounded-full overflow-hidden p-0.5 border border-zinc-800 relative">
           <div
-            className="h-full bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 rounded-full transition-all duration-500 shadow-lg shadow-orange-600/30"
+            className="h-full bg-gradient-to-r from-orange-600 via-orange-500 to-amber-500 rounded-full transition-all duration-500 shadow-lg shadow-orange-600/40"
             style={{ width: `${Math.max(1, usedPercent)}%` }}
           />
         </div>
@@ -97,17 +107,17 @@ export const StorageView: React.FC<StorageViewProps> = ({ onShowToast }) => {
         <div className="mt-4 flex flex-wrap items-center justify-between gap-4 text-xs font-mono text-zinc-400">
           <div className="flex items-center gap-2">
             <span className="w-3 h-3 rounded-sm bg-orange-500" />
-            <span>Used Disk Space: <strong>{formatBytes(usedBytes)}</strong></span>
+            <span>Used Disk Space: <strong className="text-orange-300">{formatBytes(usedBytes)}</strong></span>
           </div>
 
           <div className="flex items-center gap-2">
             <span className="w-3 h-3 rounded-sm bg-amber-400" />
-            <span>XorvilaBox Files: <strong>{formatBytes(xorvilaBytes)}</strong> ({xorvilaPercent}%)</span>
+            <span>XorvilaBox Files: <strong className="text-amber-300">{formatBytes(xorvilaBytes)}</strong> ({xorvilaPercent}%)</span>
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="w-3 h-3 rounded-sm bg-zinc-800" />
-            <span>Free VPS Space: <strong>{formatBytes(freeBytes)}</strong></span>
+            <span className="w-3 h-3 rounded-sm bg-zinc-800 border border-zinc-700" />
+            <span>Free VPS Space: <strong className="text-zinc-200">{formatBytes(freeBytes)}</strong></span>
           </div>
         </div>
       </div>
@@ -116,17 +126,17 @@ export const StorageView: React.FC<StorageViewProps> = ({ onShowToast }) => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         
         {/* Total Storage */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex flex-col justify-between">
+        <div className="bg-zinc-950/80 border border-zinc-800/80 hover:border-zinc-700 rounded-xl p-4 flex flex-col justify-between shadow-lg transition-all">
           <div className="flex items-center justify-between text-zinc-400 text-xs mb-2">
             <span>Total Storage</span>
-            <Server className="w-4 h-4 text-zinc-500" />
+            <Server className="w-4 h-4 text-orange-400" />
           </div>
           <p className="text-xl font-black text-white font-mono">{formatBytes(totalBytes)}</p>
           <span className="text-[11px] text-zinc-500 mt-1">VPS block device</span>
         </div>
 
         {/* Used Storage */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex flex-col justify-between">
+        <div className="bg-zinc-950/80 border border-zinc-800/80 hover:border-zinc-700 rounded-xl p-4 flex flex-col justify-between shadow-lg transition-all">
           <div className="flex items-center justify-between text-zinc-400 text-xs mb-2">
             <span>Used Storage</span>
             <HardDrive className="w-4 h-4 text-orange-500" />
@@ -136,7 +146,7 @@ export const StorageView: React.FC<StorageViewProps> = ({ onShowToast }) => {
         </div>
 
         {/* Free Storage */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex flex-col justify-between">
+        <div className="bg-zinc-950/80 border border-zinc-800/80 hover:border-zinc-700 rounded-xl p-4 flex flex-col justify-between shadow-lg transition-all">
           <div className="flex items-center justify-between text-zinc-400 text-xs mb-2">
             <span>Free Storage</span>
             <CheckCircle2 className="w-4 h-4 text-emerald-400" />
@@ -146,17 +156,17 @@ export const StorageView: React.FC<StorageViewProps> = ({ onShowToast }) => {
         </div>
 
         {/* Total Files */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex flex-col justify-between">
+        <div className="bg-zinc-950/80 border border-zinc-800/80 hover:border-zinc-700 rounded-xl p-4 flex flex-col justify-between shadow-lg transition-all">
           <div className="flex items-center justify-between text-zinc-400 text-xs mb-2">
             <span>Total Files</span>
-            <File className="w-4 h-4 text-blue-400" />
+            <File className="w-4 h-4 text-orange-400" />
           </div>
           <p className="text-xl font-black text-white font-mono">{platform?.totalFiles || 0}</p>
           <span className="text-[11px] text-zinc-500 mt-1">Videos & subtitles</span>
         </div>
 
         {/* Total Folders */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 flex flex-col justify-between">
+        <div className="bg-zinc-950/80 border border-zinc-800/80 hover:border-zinc-700 rounded-xl p-4 flex flex-col justify-between shadow-lg transition-all">
           <div className="flex items-center justify-between text-zinc-400 text-xs mb-2">
             <span>Total Folders</span>
             <Folder className="w-4 h-4 text-amber-400" />
@@ -171,9 +181,9 @@ export const StorageView: React.FC<StorageViewProps> = ({ onShowToast }) => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         {/* Filesystem Integrity */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 space-y-4">
+        <div className="bg-zinc-950/80 border border-zinc-800/80 rounded-2xl p-6 space-y-4 shadow-lg">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-orange-600/20 text-orange-400 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-zinc-900 text-orange-400 flex items-center justify-center border border-zinc-800">
               <ShieldCheck className="w-4 h-4" />
             </div>
             <div>
@@ -183,22 +193,22 @@ export const StorageView: React.FC<StorageViewProps> = ({ onShowToast }) => {
           </div>
 
           <div className="space-y-2.5 text-xs text-zinc-300">
-            <div className="p-3 bg-zinc-950 rounded-xl border border-zinc-800/80 flex items-start gap-2.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-1.5 shrink-0" />
+            <div className="p-3 bg-zinc-900/80 rounded-xl border border-zinc-800 flex items-start gap-2.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-orange-400 mt-1.5 shrink-0" />
               <div>
                 <strong className="text-white">Path Traversal Block:</strong> Every file operation validates that target paths strictly resolve inside <code>{disk?.storagePath}</code> using canonical paths.
               </div>
             </div>
 
-            <div className="p-3 bg-zinc-950 rounded-xl border border-zinc-800/80 flex items-start gap-2.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-1.5 shrink-0" />
+            <div className="p-3 bg-zinc-900/80 rounded-xl border border-zinc-800 flex items-start gap-2.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-orange-400 mt-1.5 shrink-0" />
               <div>
                 <strong className="text-white">HTTP 206 Range Seeking:</strong> Large video files are streamed in chunks without RAM buffering, allowing VLC and HTML5 players to seek instantly.
               </div>
             </div>
 
-            <div className="p-3 bg-zinc-950 rounded-xl border border-zinc-800/80 flex items-start gap-2.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-1.5 shrink-0" />
+            <div className="p-3 bg-zinc-900/80 rounded-xl border border-zinc-800 flex items-start gap-2.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-orange-400 mt-1.5 shrink-0" />
               <div>
                 <strong className="text-white">Direct Disk I/O:</strong> Uploads and URL downloads stream directly to disk via Node.js pipeline streams.
               </div>
@@ -207,9 +217,9 @@ export const StorageView: React.FC<StorageViewProps> = ({ onShowToast }) => {
         </div>
 
         {/* Database & Metadata Storage */}
-        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 space-y-4">
+        <div className="bg-zinc-950/80 border border-zinc-800/80 rounded-2xl p-6 space-y-4 shadow-lg">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-orange-600/20 text-orange-400 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-zinc-900 text-orange-400 flex items-center justify-center border border-zinc-800">
               <Database className="w-4 h-4" />
             </div>
             <div>
@@ -218,16 +228,16 @@ export const StorageView: React.FC<StorageViewProps> = ({ onShowToast }) => {
             </div>
           </div>
 
-          <div className="bg-zinc-950 rounded-xl p-4 border border-zinc-800/80 space-y-2 text-xs font-mono">
-            <div className="flex justify-between py-1 border-b border-zinc-900">
+          <div className="bg-zinc-900/80 rounded-xl p-4 border border-zinc-800 space-y-2 text-xs font-mono">
+            <div className="flex justify-between py-1 border-b border-zinc-800">
               <span className="text-zinc-500 font-sans">Engine:</span>
               <span className="text-zinc-200">SQLite (libsql WAL mode)</span>
             </div>
-            <div className="flex justify-between py-1 border-b border-zinc-900">
+            <div className="flex justify-between py-1 border-b border-zinc-800">
               <span className="text-zinc-500 font-sans">Tables:</span>
               <span className="text-zinc-300">users, folders, files, import_jobs</span>
             </div>
-            <div className="flex justify-between py-1 border-b border-zinc-900">
+            <div className="flex justify-between py-1 border-b border-zinc-800">
               <span className="text-zinc-500 font-sans">Folder Indexing:</span>
               <span className="text-orange-400 font-semibold">Recursive tree support</span>
             </div>

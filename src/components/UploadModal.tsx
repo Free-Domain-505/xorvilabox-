@@ -107,8 +107,8 @@ export const UploadModal: React.FC<UploadModalProps> = ({
 
   return (
     <>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150">
-        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative text-zinc-100">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm animate-in fade-in duration-150">
+        <div className="bg-zinc-950 border border-zinc-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl shadow-black/80 relative text-zinc-100">
           
           {/* Close Button */}
           <button
@@ -119,14 +119,14 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                 onClose();
               }
             }}
-            className="absolute top-4 right-4 p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+            className="absolute top-4 right-4 p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-900 active:scale-95 transition-all"
           >
             <X className="w-5 h-5" />
           </button>
 
           {/* Title */}
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-orange-600/20 border border-orange-500/30 flex items-center justify-center text-orange-400">
+            <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-orange-400 shadow-inner">
               <Upload className="w-5 h-5" />
             </div>
             <div>
@@ -149,7 +149,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                 className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all ${
                   dragActive
                     ? 'border-orange-500 bg-orange-950/20'
-                    : 'border-zinc-700/80 hover:border-zinc-500 bg-zinc-950/60'
+                    : 'border-zinc-800 hover:border-zinc-700 bg-zinc-900/50'
                 }`}
               >
                 <input
@@ -162,7 +162,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                     }
                   }}
                 />
-                <div className="w-12 h-12 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center mx-auto mb-3 text-zinc-400">
+                <div className="w-12 h-12 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center mx-auto mb-3 text-orange-400 shadow-md">
                   <Upload className="w-6 h-6 text-orange-500" />
                 </div>
                 <p className="text-sm font-medium text-zinc-200">
@@ -172,17 +172,17 @@ export const UploadModal: React.FC<UploadModalProps> = ({
               </div>
 
               {selectedFile && (
-                <div className="mt-4 p-3 bg-zinc-950 border border-zinc-800 rounded-xl flex items-center justify-between">
+                <div className="mt-4 p-3 bg-zinc-900/80 border border-zinc-800 rounded-xl flex items-center justify-between">
                   <div className="flex items-center gap-2.5 min-w-0">
                     <File className="w-4 h-4 text-orange-400 shrink-0" />
                     <div className="min-w-0">
                       <p className="text-xs font-semibold text-zinc-200 truncate">{selectedFile.name}</p>
-                      <p className="text-[11px] text-zinc-500 font-mono">{formatBytes(selectedFile.size)}</p>
+                      <p className="text-[11px] text-zinc-400 font-mono">{formatBytes(selectedFile.size)}</p>
                     </div>
                   </div>
                   <button
                     onClick={() => { setSelectedFile(null); setDuplicateFileExists(false); }}
-                    className="text-xs text-zinc-400 hover:text-zinc-200 px-2 py-1"
+                    className="text-xs text-zinc-400 hover:text-orange-400 active:scale-95 px-2 py-1 transition-all"
                   >
                     Change
                   </button>
@@ -201,19 +201,19 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => setDuplicateResolvedMode('replace')}
-                      className="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-medium"
+                      className="px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 active:scale-95 text-zinc-200 font-medium transition-all"
                     >
                       Replace
                     </button>
                     <button
                       onClick={() => setDuplicateResolvedMode('keep_both')}
-                      className="px-3 py-1.5 rounded-lg bg-orange-600 hover:bg-orange-500 text-white font-medium"
+                      className="px-3 py-1.5 rounded-lg bg-orange-600 hover:bg-orange-500 active:scale-95 text-white font-medium transition-all"
                     >
                       Keep Both (Rename)
                     </button>
                     <button
                       onClick={() => setSelectedFile(null)}
-                      className="px-3 py-1.5 rounded-lg bg-transparent text-zinc-400 hover:text-white"
+                      className="px-3 py-1.5 rounded-lg bg-transparent text-zinc-400 hover:text-white active:scale-95 transition-all"
                     >
                       Cancel
                     </button>
@@ -243,7 +243,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
               </div>
 
               {/* Progress Bar */}
-              <div className="w-full h-2.5 bg-zinc-950 rounded-full overflow-hidden border border-zinc-800">
+              <div className="w-full h-2.5 bg-zinc-900 rounded-full overflow-hidden border border-zinc-800">
                 <div
                   className="h-full bg-gradient-to-r from-orange-600 to-orange-400 transition-all duration-300 ease-out"
                   style={{ width: `${Math.min(100, Math.max(0, currentTransfer.percent))}%` }}
@@ -251,7 +251,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
               </div>
 
               {/* Real Stats */}
-              <div className="grid grid-cols-2 gap-2 text-[11px] font-mono bg-zinc-950 p-3 rounded-xl border border-zinc-800/80">
+              <div className="grid grid-cols-2 gap-2 text-[11px] font-mono bg-zinc-900/80 p-3 rounded-xl border border-zinc-800">
                 <div>
                   <span className="text-zinc-500">Uploaded: </span>
                   <span className="text-zinc-300">
@@ -311,13 +311,13 @@ export const UploadModal: React.FC<UploadModalProps> = ({
               <>
                 <button
                   onClick={() => setShowCancelModal(true)}
-                  className="px-3.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-rose-950/60 hover:text-rose-400 text-zinc-300 text-xs font-semibold transition-colors"
+                  className="px-3.5 py-1.5 rounded-lg bg-zinc-900 hover:bg-rose-950/60 hover:text-rose-400 active:scale-95 text-zinc-300 text-xs font-semibold border border-zinc-800 transition-all"
                 >
                   Cancel Upload
                 </button>
                 <button
                   onClick={onClose}
-                  className="px-4 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold transition-colors flex items-center gap-1.5"
+                  className="px-4 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 active:scale-95 text-zinc-200 text-xs font-semibold border border-zinc-800 transition-all flex items-center gap-1.5"
                 >
                   <Minimize2 className="w-3.5 h-3.5 text-orange-400" />
                   <span>Run in Background</span>
@@ -330,7 +330,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                     onSuccess();
                     onClose();
                   }}
-                  className="px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-md transition-colors"
+                  className="px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-xs font-semibold shadow-md transition-all"
                 >
                   Done
                 </button>
@@ -339,7 +339,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
               <>
                 <button
                   onClick={onClose}
-                  className="px-4 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold transition-colors"
+                  className="px-4 py-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 active:scale-95 text-zinc-300 text-xs font-semibold border border-zinc-800 transition-all"
                 >
                   Cancel
                 </button>
@@ -347,7 +347,7 @@ export const UploadModal: React.FC<UploadModalProps> = ({
                 <button
                   onClick={handleStartUpload}
                   disabled={!selectedFile || (duplicateFileExists && !duplicateResolvedMode)}
-                  className="px-5 py-2 rounded-lg bg-orange-600 hover:bg-orange-500 disabled:bg-zinc-800 disabled:text-zinc-600 text-white text-xs font-semibold shadow-md shadow-orange-600/20 transition-all flex items-center gap-1.5"
+                  className="px-5 py-2 rounded-lg bg-orange-600 hover:bg-orange-500 active:bg-orange-700 active:scale-95 disabled:bg-zinc-800 disabled:text-zinc-600 text-white text-xs font-bold shadow-md shadow-orange-950/40 transition-all flex items-center gap-1.5"
                 >
                   <Upload className="w-3.5 h-3.5" />
                   <span>Upload File</span>

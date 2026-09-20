@@ -120,6 +120,10 @@ export interface StorageStats {
     usedDiskBytes: number;
     xorvilaBoxBytes: number;
     storagePath: string;
+    mountPoint?: string;
+    filesystem?: string;
+    vpsHostname?: string;
+    vpsOs?: string;
   };
   platform: {
     totalFiles: number;

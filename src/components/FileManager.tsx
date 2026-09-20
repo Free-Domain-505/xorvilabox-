@@ -104,13 +104,13 @@ export const FileManager: React.FC<FileManagerProps> = ({
       <nav className="flex items-center gap-1 text-xs text-zinc-400 overflow-x-auto pb-1 font-medium select-none">
         <button
           onClick={() => onNavigateFolder(null)}
-          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-colors shrink-0 ${
+          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-all shrink-0 active:scale-95 ${
             !currentFolder
-              ? 'bg-zinc-800 text-orange-400 font-semibold'
-              : 'hover:text-white hover:bg-zinc-800/60'
+              ? 'bg-zinc-900 text-orange-400 font-semibold border border-zinc-800 shadow-sm'
+              : 'hover:text-white hover:bg-zinc-900/80'
           }`}
         >
-          <Home className="w-3.5 h-3.5" />
+          <Home className="w-3.5 h-3.5 text-orange-400" />
           <span>Home</span>
         </button>
 
@@ -131,10 +131,10 @@ export const FileManager: React.FC<FileManagerProps> = ({
                   };
                   onNavigateFolder(target);
                 }}
-                className={`px-2.5 py-1.5 rounded-lg transition-colors truncate max-w-[160px] shrink-0 ${
+                className={`px-2.5 py-1.5 rounded-lg transition-all truncate max-w-[160px] shrink-0 active:scale-95 ${
                   isLast
-                    ? 'bg-zinc-800 text-orange-400 font-semibold'
-                    : 'hover:text-white hover:bg-zinc-800/60'
+                    ? 'bg-zinc-900 text-orange-400 font-semibold border border-zinc-800 shadow-sm'
+                    : 'hover:text-white hover:bg-zinc-900/80'
                 }`}
               >
                 {bc.name}
@@ -145,7 +145,7 @@ export const FileManager: React.FC<FileManagerProps> = ({
       </nav>
 
       {/* Top Action Bar: Search, Sort, New Folder, Upload, Import, Import ZIP */}
-      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 bg-zinc-900/90 border border-zinc-800/90 rounded-2xl p-3.5 shadow-sm">
+      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3 bg-zinc-950/90 border border-zinc-800/90 rounded-2xl p-3.5 shadow-xl shadow-black/40 backdrop-blur-md">
         
         {/* Search Bar */}
         <div className="relative flex-1">
@@ -155,7 +155,7 @@ export const FileManager: React.FC<FileManagerProps> = ({
             placeholder="Search anime files, episodes, or folders..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-black border border-zinc-800 rounded-xl pl-10 pr-4 py-2 text-xs text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-orange-500 transition-colors"
+            className="w-full bg-black/80 border border-zinc-800 rounded-xl pl-10 pr-4 py-2 text-xs text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-orange-500/80 focus:ring-1 focus:ring-orange-500/40 transition-all"
           />
         </div>
 
@@ -163,26 +163,26 @@ export const FileManager: React.FC<FileManagerProps> = ({
         <div className="flex flex-wrap items-center gap-2">
           
           {/* Sort Dropdown */}
-          <div className="relative flex items-center bg-black border border-zinc-800 rounded-xl px-2.5 py-1 text-xs text-zinc-300">
+          <div className="relative flex items-center bg-zinc-900 border border-zinc-800 rounded-xl px-2.5 py-1 text-xs text-zinc-300 hover:border-zinc-700 transition-colors">
             <ArrowUpDown className="w-3.5 h-3.5 text-orange-400 mr-1.5 shrink-0" />
             <select
               value={sortOption}
               onChange={(e) => setSortOption(e.target.value as any)}
               className="bg-transparent text-xs text-zinc-200 focus:outline-none cursor-pointer py-1 pr-1"
             >
-              <option value="episode" className="bg-zinc-900 text-white">Episode Number (Asc)</option>
-              <option value="name-asc" className="bg-zinc-900 text-white">Name (A - Z)</option>
-              <option value="name-desc" className="bg-zinc-900 text-white">Name (Z - A)</option>
-              <option value="size-desc" className="bg-zinc-900 text-white">Size (Largest first)</option>
-              <option value="size-asc" className="bg-zinc-900 text-white">Size (Smallest first)</option>
-              <option value="date-desc" className="bg-zinc-900 text-white">Date Added (Newest)</option>
+              <option value="episode" className="bg-zinc-950 text-orange-400">Episode Number (Asc)</option>
+              <option value="name-asc" className="bg-zinc-950 text-white">Name (A - Z)</option>
+              <option value="name-desc" className="bg-zinc-950 text-white">Name (Z - A)</option>
+              <option value="size-desc" className="bg-zinc-950 text-white">Size (Largest first)</option>
+              <option value="size-asc" className="bg-zinc-950 text-white">Size (Smallest first)</option>
+              <option value="date-desc" className="bg-zinc-950 text-white">Date Added (Newest)</option>
             </select>
           </div>
 
           {/* Action: + New Folder */}
           <button
             onClick={onOpenNewFolderModal}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold border border-zinc-700/80 transition-colors shadow-sm"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 active:bg-zinc-850 text-zinc-200 hover:text-white text-xs font-semibold border border-zinc-800 hover:border-zinc-700 active:scale-95 transition-all shadow-sm"
           >
             <FolderPlus className="w-3.5 h-3.5 text-orange-400" />
             <span>New Folder</span>
@@ -191,7 +191,7 @@ export const FileManager: React.FC<FileManagerProps> = ({
           {/* Action: Upload */}
           <button
             onClick={onOpenUploadModal}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-orange-600 hover:bg-orange-500 text-white text-xs font-semibold shadow-md shadow-orange-600/20 transition-all"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-orange-600 hover:bg-orange-500 active:bg-orange-700 text-white text-xs font-bold shadow-md shadow-orange-950/50 active:scale-95 transition-all"
           >
             <Upload className="w-3.5 h-3.5" />
             <span>Upload</span>
@@ -200,9 +200,9 @@ export const FileManager: React.FC<FileManagerProps> = ({
           {/* Action: Import from URL */}
           <button
             onClick={onOpenImportUrlModal}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold border border-zinc-700/80 transition-colors shadow-sm"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 active:bg-zinc-850 text-zinc-200 hover:text-white text-xs font-semibold border border-zinc-800 hover:border-zinc-700 active:scale-95 transition-all shadow-sm"
           >
-            <Globe className="w-3.5 h-3.5 text-blue-400" />
+            <Globe className="w-3.5 h-3.5 text-orange-400" />
             <span className="hidden sm:inline">Import URL</span>
             <span className="sm:hidden">URL</span>
           </button>
@@ -210,9 +210,9 @@ export const FileManager: React.FC<FileManagerProps> = ({
           {/* Action: Import ZIP (Section 7) */}
           <button
             onClick={onOpenImportZipModal}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-orange-400 text-xs font-semibold border border-orange-500/40 transition-colors shadow-sm"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 active:bg-zinc-850 text-orange-400 text-xs font-semibold border border-zinc-800 hover:border-zinc-700 active:scale-95 transition-all shadow-sm"
           >
-            <FileArchive className="w-3.5 h-3.5" />
+            <FileArchive className="w-3.5 h-3.5 text-orange-400" />
             <span>Import ZIP</span>
           </button>
 
@@ -310,8 +310,8 @@ export const FileManager: React.FC<FileManagerProps> = ({
 
           {/* Empty States (Section 22) */}
           {filteredFolders.length === 0 && filteredFiles.length === 0 && (
-            <div className="bg-zinc-900/50 border border-zinc-800/80 rounded-2xl p-12 text-center max-w-md mx-auto my-8 space-y-4">
-              <div className="w-16 h-16 rounded-2xl bg-orange-600/10 border border-orange-500/20 text-orange-400 flex items-center justify-center mx-auto shadow-inner">
+            <div className="bg-zinc-950/90 border border-zinc-800/90 rounded-2xl p-12 text-center max-w-md mx-auto my-8 space-y-4 shadow-xl shadow-black/40 backdrop-blur-sm">
+              <div className="w-16 h-16 rounded-2xl bg-zinc-900 border border-zinc-800 text-orange-400 flex items-center justify-center mx-auto shadow-inner">
                 <Film className="w-8 h-8" />
               </div>
               <div>
@@ -329,7 +329,7 @@ export const FileManager: React.FC<FileManagerProps> = ({
                 <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
                   <button
                     onClick={onOpenUploadModal}
-                    className="px-4 py-2 rounded-xl bg-orange-600 hover:bg-orange-500 text-white text-xs font-semibold shadow-md shadow-orange-600/20 flex items-center gap-1.5"
+                    className="px-4 py-2 rounded-xl bg-orange-600 hover:bg-orange-500 active:bg-orange-700 text-white text-xs font-bold shadow-md shadow-orange-950/50 active:scale-95 transition-all flex items-center gap-1.5"
                   >
                     <Upload className="w-3.5 h-3.5" />
                     <span>Upload Files</span>
@@ -337,7 +337,7 @@ export const FileManager: React.FC<FileManagerProps> = ({
 
                   <button
                     onClick={onOpenImportZipModal}
-                    className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold border border-zinc-700 flex items-center gap-1.5"
+                    className="px-4 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 active:bg-zinc-850 text-orange-400 text-xs font-semibold border border-zinc-800 hover:border-zinc-700 active:scale-95 transition-all flex items-center gap-1.5"
                   >
                     <FileArchive className="w-3.5 h-3.5 text-orange-400" />
                     <span>Import ZIP</span>
@@ -345,9 +345,9 @@ export const FileManager: React.FC<FileManagerProps> = ({
 
                   <button
                     onClick={onOpenNewFolderModal}
-                    className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold border border-zinc-700 flex items-center gap-1.5"
+                    className="px-4 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 active:bg-zinc-850 text-zinc-200 hover:text-white text-xs font-semibold border border-zinc-800 hover:border-zinc-700 active:scale-95 transition-all flex items-center gap-1.5"
                   >
-                    <FolderPlus className="w-3.5 h-3.5 text-zinc-400" />
+                    <FolderPlus className="w-3.5 h-3.5 text-orange-400" />
                     <span>+ New Folder</span>
                   </button>
                 </div>

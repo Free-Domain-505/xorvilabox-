@@ -55,7 +55,7 @@ export const CompactTransferBar: React.FC = () => {
       tabIndex={0}
       title="Click to view full Transfer Manager"
     >
-      <div className="flex items-center gap-3 bg-zinc-900/95 hover:bg-zinc-850 text-zinc-100 px-4 py-2.5 rounded-full border border-orange-500/40 shadow-xl shadow-orange-950/20 backdrop-blur-md transition-all transform hover:scale-105 select-none">
+      <div className="flex items-center gap-3 bg-zinc-950 hover:bg-zinc-900 active:scale-95 text-zinc-100 px-4 py-2.5 rounded-full border border-zinc-800 shadow-2xl shadow-black/90 backdrop-blur-md transition-all select-none">
         
         <div className="flex items-center gap-2">
           {renderIcon()}
@@ -63,21 +63,21 @@ export const CompactTransferBar: React.FC = () => {
         </div>
 
         {overallPercent > 0 && (
-          <div className="w-16 h-1.5 bg-zinc-800 rounded-full overflow-hidden">
+          <div className="w-16 h-1.5 bg-zinc-900 rounded-full overflow-hidden border border-zinc-800">
             <div
-              className="h-full bg-orange-500 rounded-full transition-all duration-300"
+              className="h-full bg-orange-500 rounded-full transition-all duration-300 shadow-sm shadow-orange-500/50"
               style={{ width: `${Math.min(100, Math.max(0, overallPercent))}%` }}
             />
           </div>
         )}
 
         {totalSpeed > 0 && (
-          <span className="text-[11px] font-mono text-zinc-400">
+          <span className="text-[11px] font-mono text-orange-400 font-medium">
             {formatSpeed(totalSpeed)}
           </span>
         )}
 
-        <span className="text-[10px] bg-orange-600/30 text-orange-400 border border-orange-500/30 font-bold px-1.5 py-0.5 rounded-full">
+        <span className="text-[10px] bg-orange-600/20 text-orange-400 border border-orange-500/30 font-bold px-1.5 py-0.5 rounded-full">
           {count}
         </span>
       </div>

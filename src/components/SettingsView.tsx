@@ -72,9 +72,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ user, onShowToast, o
       </div>
 
       {/* Admin Password Change */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-xl">
+      <div className="bg-zinc-950/90 border border-zinc-800/90 rounded-2xl p-6 shadow-xl shadow-black/40 backdrop-blur-md">
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-xl bg-orange-600/20 border border-orange-500/30 flex items-center justify-center text-orange-400">
+          <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-orange-400 shadow-inner">
             <Lock className="w-5 h-5" />
           </div>
           <div>
@@ -94,7 +94,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ user, onShowToast, o
                 required
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
-                className="w-full bg-black border border-zinc-700/80 rounded-lg px-3.5 py-2.5 text-xs text-zinc-100 focus:outline-none focus:border-orange-500"
+                className="w-full bg-black/80 border border-zinc-800 rounded-lg px-3.5 py-2.5 text-xs text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500/40 transition-all"
               />
             </div>
 
@@ -107,7 +107,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ user, onShowToast, o
                 required
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full bg-black border border-zinc-700/80 rounded-lg px-3.5 py-2.5 text-xs text-zinc-100 focus:outline-none focus:border-orange-500"
+                className="w-full bg-black/80 border border-zinc-800 rounded-lg px-3.5 py-2.5 text-xs text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500/40 transition-all"
               />
             </div>
 
@@ -120,7 +120,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ user, onShowToast, o
                 required
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full bg-black border border-zinc-700/80 rounded-lg px-3.5 py-2.5 text-xs text-zinc-100 focus:outline-none focus:border-orange-500"
+                className="w-full bg-black/80 border border-zinc-800 rounded-lg px-3.5 py-2.5 text-xs text-zinc-100 placeholder:text-zinc-500 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500/40 transition-all"
               />
             </div>
 
@@ -141,20 +141,20 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ user, onShowToast, o
             <button
               type="submit"
               disabled={loading}
-              className="px-5 py-2.5 rounded-lg bg-orange-600 hover:bg-orange-500 disabled:bg-zinc-800 text-white text-xs font-semibold shadow-md shadow-orange-600/20 flex items-center gap-1.5 transition-all"
+              className="px-5 py-2.5 rounded-lg bg-orange-600 hover:bg-orange-500 active:bg-orange-700 active:scale-95 disabled:bg-zinc-800 text-white text-xs font-bold shadow-md shadow-orange-950/40 flex items-center gap-1.5 transition-all"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
               <span>Update Password</span>
             </button>
           </form>
         ) : (
-          <div className="p-4 bg-zinc-950 rounded-xl border border-zinc-800 flex items-center justify-between">
+          <div className="p-4 bg-zinc-900/80 rounded-xl border border-zinc-800 flex items-center justify-between">
             <p className="text-xs text-zinc-400">
               Please sign in as administrator to change access credentials.
             </p>
             <button
               onClick={onOpenLogin}
-              className="px-4 py-2 rounded-lg bg-orange-600 hover:bg-orange-500 text-white text-xs font-semibold"
+              className="px-4 py-2 rounded-lg bg-orange-600 hover:bg-orange-500 active:bg-orange-700 active:scale-95 text-white text-xs font-semibold shadow-md shadow-orange-950/40 transition-all"
             >
               Sign In
             </button>
@@ -163,9 +163,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ user, onShowToast, o
       </div>
 
       {/* VPS Runtime Information */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 shadow-xl space-y-4">
+      <div className="bg-zinc-950/90 border border-zinc-800/90 rounded-2xl p-6 shadow-xl shadow-black/40 backdrop-blur-md space-y-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-orange-600/20 border border-orange-500/30 flex items-center justify-center text-orange-400">
+          <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-orange-400 shadow-inner">
             <Server className="w-5 h-5" />
           </div>
           <div>
@@ -175,22 +175,22 @@ export const SettingsView: React.FC<SettingsViewProps> = ({ user, onShowToast, o
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs font-mono">
-          <div className="p-3 bg-zinc-950 rounded-xl border border-zinc-800">
+          <div className="p-3 bg-zinc-900/80 rounded-xl border border-zinc-800">
             <span className="text-zinc-500 block text-[10px] uppercase tracking-wider mb-1 font-sans">Storage Directory</span>
             <span className="text-orange-400 font-bold">/var/lib/xorvilabox/storage</span>
           </div>
 
-          <div className="p-3 bg-zinc-950 rounded-xl border border-zinc-800">
+          <div className="p-3 bg-zinc-900/80 rounded-xl border border-zinc-800">
             <span className="text-zinc-500 block text-[10px] uppercase tracking-wider mb-1 font-sans">Database Location</span>
             <span className="text-zinc-200">/var/www/xorvilabox/data/xorvilabox.db</span>
           </div>
 
-          <div className="p-3 bg-zinc-950 rounded-xl border border-zinc-800">
+          <div className="p-3 bg-zinc-900/80 rounded-xl border border-zinc-800">
             <span className="text-zinc-500 block text-[10px] uppercase tracking-wider mb-1 font-sans">Systemd Service</span>
             <span className="text-emerald-400">xorvilabox.service (Auto-restart on fail)</span>
           </div>
 
-          <div className="p-3 bg-zinc-950 rounded-xl border border-zinc-800">
+          <div className="p-3 bg-zinc-900/80 rounded-xl border border-zinc-800">
             <span className="text-zinc-500 block text-[10px] uppercase tracking-wider mb-1 font-sans">Nginx Reverse Proxy</span>
             <span className="text-zinc-200">HTTP/2, Range Header pass-through</span>
           </div>

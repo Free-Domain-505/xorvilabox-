@@ -82,8 +82,8 @@ export const ImportUrlModal: React.FC<ImportUrlModalProps> = ({
 
   return (
     <>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150">
-        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative text-zinc-100">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm animate-in fade-in duration-150">
+        <div className="bg-zinc-950 border border-zinc-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl shadow-black/80 relative text-zinc-100">
           
           {/* Close Button */}
           <button
@@ -94,14 +94,14 @@ export const ImportUrlModal: React.FC<ImportUrlModalProps> = ({
                 onClose();
               }
             }}
-            className="absolute top-4 right-4 p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+            className="absolute top-4 right-4 p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-900 active:scale-95 transition-all"
           >
             <X className="w-5 h-5" />
           </button>
 
           {/* Title */}
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-orange-600/20 border border-orange-500/30 flex items-center justify-center text-orange-400">
+            <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-orange-400 shadow-inner">
               <Globe className="w-5 h-5" />
             </div>
             <div>
@@ -125,7 +125,7 @@ export const ImportUrlModal: React.FC<ImportUrlModalProps> = ({
                   placeholder="https://example.com/anime/Season01.zip or episode.mkv"
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
-                  className="w-full bg-black border border-zinc-700/80 rounded-lg px-3.5 py-2.5 text-xs text-zinc-100 focus:outline-none focus:border-orange-500 placeholder:text-zinc-600 font-mono"
+                  className="w-full bg-black/80 border border-zinc-800 rounded-lg px-3.5 py-2.5 text-xs text-zinc-100 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500/40 placeholder:text-zinc-600 font-mono transition-all"
                 />
                 <p className="text-[11px] text-zinc-500 mt-1.5">
                   Supports ZIP archives (auto-extracted on VPS with anime episode detection) and direct media files (MKV, MP4, etc.).
@@ -143,14 +143,14 @@ export const ImportUrlModal: React.FC<ImportUrlModalProps> = ({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-4 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold transition-colors"
+                  className="px-4 py-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 active:scale-95 text-zinc-300 text-xs font-semibold border border-zinc-800 transition-all"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={loading || !url.trim()}
-                  className="px-5 py-2 rounded-lg bg-orange-600 hover:bg-orange-500 disabled:bg-zinc-800 disabled:text-zinc-600 text-white text-xs font-semibold shadow-md shadow-orange-600/20 transition-all flex items-center gap-1.5"
+                  className="px-5 py-2 rounded-lg bg-orange-600 hover:bg-orange-500 active:bg-orange-700 active:scale-95 disabled:bg-zinc-800 disabled:text-zinc-600 text-white text-xs font-bold shadow-md shadow-orange-950/40 transition-all flex items-center gap-1.5"
                 >
                   <Download className="w-3.5 h-3.5" />
                   <span>Download to VPS</span>
@@ -173,7 +173,7 @@ export const ImportUrlModal: React.FC<ImportUrlModalProps> = ({
               </div>
 
               {/* Progress Bar */}
-              <div className="w-full h-2.5 bg-zinc-950 rounded-full overflow-hidden border border-zinc-800">
+              <div className="w-full h-2.5 bg-zinc-900 rounded-full overflow-hidden border border-zinc-800">
                 {currentTransfer.total === 0 && !isProcessingZip ? (
                   <div className="h-full bg-gradient-to-r from-orange-600 to-amber-400 animate-pulse w-full" />
                 ) : (
@@ -185,7 +185,7 @@ export const ImportUrlModal: React.FC<ImportUrlModalProps> = ({
               </div>
 
               {/* Real Stats Grid */}
-              <div className="grid grid-cols-2 gap-2 text-[11px] font-mono bg-zinc-950 p-3 rounded-xl border border-zinc-800/80">
+              <div className="grid grid-cols-2 gap-2 text-[11px] font-mono bg-zinc-900/80 p-3 rounded-xl border border-zinc-800">
                 {isProcessingZip ? (
                   <>
                     <div>
@@ -274,13 +274,13 @@ export const ImportUrlModal: React.FC<ImportUrlModalProps> = ({
                   <>
                     <button
                       onClick={() => setShowCancelModal(true)}
-                      className="px-3.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-rose-950/60 hover:text-rose-400 text-zinc-300 text-xs font-semibold transition-colors"
+                      className="px-3.5 py-1.5 rounded-lg bg-zinc-900 hover:bg-rose-950/60 hover:text-rose-400 active:scale-95 text-zinc-300 text-xs font-semibold border border-zinc-800 transition-all"
                     >
                       Cancel Transfer
                     </button>
                     <button
                       onClick={onClose}
-                      className="px-4 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold transition-colors flex items-center gap-1.5"
+                      className="px-4 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 active:scale-95 text-zinc-200 text-xs font-semibold border border-zinc-800 transition-all flex items-center gap-1.5"
                     >
                       <Minimize2 className="w-3.5 h-3.5 text-orange-400" />
                       <span>Run in Background</span>
@@ -293,7 +293,7 @@ export const ImportUrlModal: React.FC<ImportUrlModalProps> = ({
                         onSuccess();
                         onClose();
                       }}
-                      className="px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition-colors"
+                      className="px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-xs font-semibold transition-all shadow-md"
                     >
                       Done
                     </button>
@@ -302,7 +302,7 @@ export const ImportUrlModal: React.FC<ImportUrlModalProps> = ({
                   <div className="w-full flex justify-end">
                     <button
                       onClick={onClose}
-                      className="px-4 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold transition-colors"
+                      className="px-4 py-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 active:scale-95 text-zinc-300 text-xs font-semibold border border-zinc-800 transition-all"
                     >
                       Close
                     </button>

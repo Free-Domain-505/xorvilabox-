@@ -1,5 +1,6 @@
 import path from 'path';
 import fs from 'fs';
+import os from 'os';
 import { execSync } from 'child_process';
 import { type Request, type Response } from 'express';
 
@@ -171,8 +172,39 @@ export function streamFileWithRange(
   }
 }
 
+export function getVpsHostInfo(): { vpsHostname: string; vpsOs: string } {
+  let vpsHostname = os.hostname();
+  try {
+    if (fs.existsSync('/etc/hostname')) {
+      const h = fs.readFileSync('/etc/hostname', 'utf8').trim();
+      if (h) vpsHostname = h;
+    } else if (fs.existsSync('/etc/hosts')) {
+      const hostsContent = fs.readFileSync('/etc/hosts', 'utf8');
+      const lines = hostsContent.split('\n');
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (trimmed && !trimmed.startsWith('#')) {
+          const parts = trimmed.split(/\s+/);
+          if (parts.length >= 2 && (parts[0] === '127.0.1.1' || parts[0] === '127.0.0.1')) {
+            const candidate = parts.find((p) => p !== '127.0.0.1' && p !== '127.0.1.1' && p !== 'localhost');
+            if (candidate) {
+              vpsHostname = candidate;
+              break;
+            }
+          }
+        }
+      }
+    }
+  } catch {
+    // ignore
+  }
+
+  const vpsOs = `${os.type()} (${os.release()}) ${os.arch()}`;
+  return { vpsHostname, vpsOs };
+}
+
 /**
- * Reads actual Ubuntu VPS disk information using fs.statfs
+ * Reads actual Ubuntu VPS disk information using Linux native tools with multiple fallback targets
  */
 export async function getDiskStatistics(): Promise<{
   totalDiskBytes: number;
@@ -180,54 +212,79 @@ export async function getDiskStatistics(): Promise<{
   usedDiskBytes: number;
   xorvilaBoxBytes: number;
   storagePath: string;
+  mountPoint?: string;
+  filesystem?: string;
+  vpsHostname?: string;
+  vpsOs?: string;
 }> {
   const storagePath = getStorageRoot();
   let totalDiskBytes = 0;
   let freeDiskBytes = 0;
   let usedDiskBytes = 0;
+  let filesystem = 'VPS Disk (/dev/root)';
+  let mountPoint = '/';
+  const { vpsHostname, vpsOs } = getVpsHostInfo();
 
-  // 1. Primary: Use native Linux df -B1 for exact VPS disk partition statistics
-  try {
-    const dfOut = execSync(`df -B1 "${storagePath}"`, { encoding: 'utf8', timeout: 3000 });
-    const lines = dfOut.trim().split('\n');
-    if (lines.length >= 2) {
-      const parts = lines[1].trim().split(/\s+/);
-      if (parts.length >= 4) {
-        const total = parseInt(parts[1], 10);
-        const used = parseInt(parts[2], 10);
-        const free = parseInt(parts[3], 10);
-        if (!isNaN(total) && total > 0) {
-          totalDiskBytes = total;
-          usedDiskBytes = !isNaN(used) ? used : 0;
-          freeDiskBytes = !isNaN(free) ? free : Math.max(0, total - usedDiskBytes);
+  // Paths to inspect for VPS storage partition
+  const candidatePaths = [
+    fs.existsSync(storagePath) ? storagePath : null,
+    '/',
+    process.cwd(),
+  ].filter(Boolean) as string[];
+
+  for (const queryPath of candidatePaths) {
+    if (totalDiskBytes > 0) break;
+
+    // 1. Primary: Use native Linux df -B1 for exact VPS disk partition statistics
+    try {
+      const dfOut = execSync(`df -B1 "${queryPath}"`, { encoding: 'utf8', timeout: 3000 });
+      const lines = dfOut.trim().split('\n');
+      if (lines.length >= 2) {
+        const parts = lines[1].trim().split(/\s+/);
+        if (parts.length >= 4) {
+          const total = parseInt(parts[1], 10);
+          const used = parseInt(parts[2], 10);
+          const free = parseInt(parts[3], 10);
+          if (!isNaN(total) && total > 0) {
+            filesystem = parts[0] || filesystem;
+            mountPoint = parts[5] || (queryPath === '/' ? '/' : queryPath);
+            totalDiskBytes = total;
+            usedDiskBytes = !isNaN(used) ? used : 0;
+            freeDiskBytes = !isNaN(free) ? free : Math.max(0, total - usedDiskBytes);
+            break;
+          }
         }
       }
+    } catch {
+      // try next candidate
     }
-  } catch {
-    // df command not available or failed
-  }
 
-  // 2. Secondary: Fallback to Node.js fs.statfs
-  if (totalDiskBytes === 0) {
-    try {
-      if (typeof fs.statfs === 'function') {
-        const stats = await new Promise<fs.BigIntStatsFs | fs.StatsFs>((resolve, reject) => {
-          fs.statfs(storagePath, (err, s) => {
-            if (err) reject(err);
-            else resolve(s);
+    // 2. Secondary: Fallback to Node.js fs.statfs
+    if (totalDiskBytes === 0) {
+      try {
+        if (typeof fs.statfs === 'function') {
+          const stats = await new Promise<fs.BigIntStatsFs | fs.StatsFs>((resolve, reject) => {
+            fs.statfs(queryPath, (err, s) => {
+              if (err) reject(err);
+              else resolve(s);
+            });
           });
-        });
 
-        const bsize = Number(stats.bsize);
-        const blocks = Number(stats.blocks);
-        const bfree = Number(stats.bavail || stats.bfree);
+          const bsize = Number(stats.bsize);
+          const blocks = Number(stats.blocks);
+          const bfree = Number(stats.bavail || stats.bfree);
 
-        totalDiskBytes = blocks * bsize;
-        freeDiskBytes = bfree * bsize;
-        usedDiskBytes = totalDiskBytes - freeDiskBytes;
+          if (blocks > 0 && bsize > 0) {
+            totalDiskBytes = blocks * bsize;
+            freeDiskBytes = bfree * bsize;
+            usedDiskBytes = totalDiskBytes - freeDiskBytes;
+            mountPoint = queryPath;
+            break;
+          }
+        }
+      } catch (err) {
+        console.warn('[XorvilaBox Storage] statfs warning:', err);
       }
-    } catch (err) {
-      console.warn('[XorvilaBox Storage] statfs warning:', err);
     }
   }
 
@@ -274,5 +331,9 @@ export async function getDiskStatistics(): Promise<{
     usedDiskBytes,
     xorvilaBoxBytes,
     storagePath,
+    mountPoint,
+    filesystem,
+    vpsHostname,
+    vpsOs,
   };
 }

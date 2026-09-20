@@ -69,18 +69,18 @@ export const TransferManager: React.FC<TransferManagerProps> = ({
           ${!isManagerOpen ? 'translate-y-full sm:translate-y-24 opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'}
         `}
       >
-        <div className="bg-zinc-950 border border-zinc-800 rounded-t-2xl sm:rounded-2xl shadow-2xl shadow-black/80 flex flex-col overflow-hidden max-h-[85vh] sm:max-h-[580px]">
+        <div className="bg-zinc-950 border border-zinc-800 rounded-t-2xl sm:rounded-2xl shadow-2xl shadow-black/90 flex flex-col overflow-hidden max-h-[85vh] sm:max-h-[580px]">
           
           {/* Top Header Bar */}
           <div
             onClick={toggleMinimize}
-            className="flex items-center justify-between px-4 py-3 bg-zinc-900 border-b border-zinc-800 cursor-pointer select-none hover:bg-zinc-850 transition-colors"
+            className="flex items-center justify-between px-4 py-3 bg-zinc-950 border-b border-zinc-800 cursor-pointer select-none hover:bg-zinc-900 active:bg-zinc-800 transition-colors"
           >
             <div className="flex items-center gap-2.5">
-              <div className="w-2.5 h-2.5 rounded-full bg-orange-500 animate-pulse" />
+              <div className="w-2.5 h-2.5 rounded-full bg-orange-500 animate-pulse shadow-sm shadow-orange-500/60" />
               <h3 className="text-sm font-bold text-white tracking-wide">Transfers</h3>
               {activeTransfers.length > 0 && (
-                <span className="text-[11px] font-semibold bg-orange-600/30 text-orange-400 border border-orange-500/40 px-2 py-0.5 rounded-full">
+                <span className="text-[11px] font-semibold bg-orange-600/20 text-orange-400 border border-orange-500/30 px-2 py-0.5 rounded-full">
                   {activeTransfers.length} active
                 </span>
               )}
@@ -89,7 +89,7 @@ export const TransferManager: React.FC<TransferManagerProps> = ({
             <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
               <button
                 onClick={toggleMinimize}
-                className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+                className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-900 active:scale-95 transition-all"
                 title={isMinimized ? 'Expand' : 'Minimize'}
                 aria-label="Toggle minimize"
               >
@@ -97,7 +97,7 @@ export const TransferManager: React.FC<TransferManagerProps> = ({
               </button>
               <button
                 onClick={closeManager}
-                className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+                className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-900 active:scale-95 transition-all"
                 title="Close Transfer Manager"
                 aria-label="Close"
               >
@@ -110,14 +110,14 @@ export const TransferManager: React.FC<TransferManagerProps> = ({
           {!isMinimized && (
             <>
               {/* Filter Tabs Bar */}
-              <div className="flex items-center justify-between px-3 py-2 bg-zinc-900/60 border-b border-zinc-800/80 text-xs">
+              <div className="flex items-center justify-between px-3 py-2 bg-zinc-900/60 border-b border-zinc-800 text-xs">
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => setActiveTab('active')}
-                    className={`px-3 py-1 rounded-lg font-medium transition-colors flex items-center gap-1.5 ${
+                    className={`px-3 py-1 rounded-lg font-medium active:scale-95 transition-all flex items-center gap-1.5 ${
                       activeTab === 'active'
-                        ? 'bg-orange-600 text-white shadow-sm'
-                        : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60'
+                        ? 'bg-orange-600 text-white shadow-md shadow-orange-950/40 font-bold'
+                        : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'
                     }`}
                   >
                     <span>Active</span>
@@ -132,10 +132,10 @@ export const TransferManager: React.FC<TransferManagerProps> = ({
 
                   <button
                     onClick={() => setActiveTab('completed')}
-                    className={`px-3 py-1 rounded-lg font-medium transition-colors flex items-center gap-1.5 ${
+                    className={`px-3 py-1 rounded-lg font-medium active:scale-95 transition-all flex items-center gap-1.5 ${
                       activeTab === 'completed'
-                        ? 'bg-orange-600 text-white shadow-sm'
-                        : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60'
+                        ? 'bg-orange-600 text-white shadow-md shadow-orange-950/40 font-bold'
+                        : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'
                     }`}
                   >
                     <span>Completed</span>
@@ -150,10 +150,10 @@ export const TransferManager: React.FC<TransferManagerProps> = ({
 
                   <button
                     onClick={() => setActiveTab('failed')}
-                    className={`px-3 py-1 rounded-lg font-medium transition-colors flex items-center gap-1.5 ${
+                    className={`px-3 py-1 rounded-lg font-medium active:scale-95 transition-all flex items-center gap-1.5 ${
                       activeTab === 'failed'
-                        ? 'bg-orange-600 text-white shadow-sm'
-                        : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60'
+                        ? 'bg-orange-600 text-white shadow-md shadow-orange-950/40 font-bold'
+                        : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'
                     }`}
                   >
                     <span>Failed</span>
@@ -170,7 +170,7 @@ export const TransferManager: React.FC<TransferManagerProps> = ({
                 {activeTab === 'completed' && completedTransfers.length > 0 && (
                   <button
                     onClick={clearCompleted}
-                    className="flex items-center gap-1 text-[11px] text-zinc-400 hover:text-rose-400 transition-colors px-2 py-1 rounded hover:bg-zinc-800"
+                    className="flex items-center gap-1 text-[11px] text-zinc-400 hover:text-rose-400 active:scale-95 transition-all px-2 py-1 rounded hover:bg-zinc-900"
                     title="Clear completed transfers"
                   >
                     <Trash2 className="w-3 h-3" />
@@ -180,10 +180,10 @@ export const TransferManager: React.FC<TransferManagerProps> = ({
               </div>
 
               {/* Transfers List Area */}
-              <div className="p-3 overflow-y-auto space-y-2.5 flex-1 min-h-[220px] max-h-[380px]">
+              <div className="p-3 overflow-y-auto space-y-2.5 flex-1 min-h-[220px] max-h-[380px] bg-black/60">
                 {currentList.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-48 text-center px-4">
-                    <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-500 mb-2">
+                    <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-orange-400 mb-2 shadow-inner">
                       {activeTab === 'active' && <Inbox className="w-5 h-5" />}
                       {activeTab === 'completed' && <CheckCircle2 className="w-5 h-5" />}
                       {activeTab === 'failed' && <AlertCircle className="w-5 h-5" />}

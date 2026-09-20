@@ -82,8 +82,8 @@ export const ImportZipModal: React.FC<ImportZipModalProps> = ({
 
   return (
     <>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-150">
-        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative text-zinc-100">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm animate-in fade-in duration-150">
+        <div className="bg-zinc-950 border border-zinc-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl shadow-black/80 relative text-zinc-100">
           
           {/* Close Button */}
           <button
@@ -94,14 +94,14 @@ export const ImportZipModal: React.FC<ImportZipModalProps> = ({
                 onClose();
               }
             }}
-            className="absolute top-4 right-4 p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+            className="absolute top-4 right-4 p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-900 active:scale-95 transition-all"
           >
             <X className="w-5 h-5" />
           </button>
 
           {/* Title */}
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-xl bg-orange-600/20 border border-orange-500/30 flex items-center justify-center text-orange-400">
+            <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-orange-400 shadow-inner">
               <FileArchive className="w-5 h-5" />
             </div>
             <div>
@@ -117,7 +117,7 @@ export const ImportZipModal: React.FC<ImportZipModalProps> = ({
             <div>
               <div
                 onClick={() => fileInputRef.current?.click()}
-                className="border-2 border-dashed border-zinc-700 hover:border-orange-500 bg-zinc-950/60 rounded-xl p-6 text-center cursor-pointer transition-all"
+                className="border-2 border-dashed border-zinc-800 hover:border-zinc-700 bg-zinc-900/50 rounded-xl p-6 text-center cursor-pointer transition-all"
               >
                 <input
                   ref={fileInputRef}
@@ -130,7 +130,7 @@ export const ImportZipModal: React.FC<ImportZipModalProps> = ({
                     }
                   }}
                 />
-                <div className="w-12 h-12 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center mx-auto mb-3 text-orange-400">
+                <div className="w-12 h-12 rounded-full bg-zinc-900 border border-zinc-800 flex items-center justify-center mx-auto mb-3 text-orange-400 shadow-md">
                   <FileArchive className="w-6 h-6" />
                 </div>
                 <p className="text-sm font-medium text-zinc-200">
@@ -140,14 +140,14 @@ export const ImportZipModal: React.FC<ImportZipModalProps> = ({
               </div>
 
               {selectedZip && (
-                <div className="mt-4 p-3 bg-zinc-950 border border-zinc-800 rounded-xl flex items-center justify-between">
+                <div className="mt-4 p-3 bg-zinc-900/80 border border-zinc-800 rounded-xl flex items-center justify-between">
                   <div>
                     <p className="text-xs font-semibold text-zinc-200 truncate">{selectedZip.name}</p>
-                    <p className="text-[11px] text-zinc-500 font-mono">{formatBytes(selectedZip.size)}</p>
+                    <p className="text-[11px] text-zinc-400 font-mono">{formatBytes(selectedZip.size)}</p>
                   </div>
                   <button
                     onClick={() => setSelectedZip(null)}
-                    className="text-xs text-zinc-400 hover:text-zinc-200"
+                    className="text-xs text-zinc-400 hover:text-orange-400 active:scale-95 px-2 py-1 transition-all"
                   >
                     Change
                   </button>
@@ -155,8 +155,8 @@ export const ImportZipModal: React.FC<ImportZipModalProps> = ({
               )}
 
               {/* VPS Security Hardening Notice */}
-              <div className="mt-4 p-3 rounded-xl bg-zinc-950 border border-zinc-800 text-[11px] text-zinc-400 space-y-1.5">
-                <div className="flex items-center gap-1.5 text-emerald-400 font-semibold">
+              <div className="mt-4 p-3 rounded-xl bg-zinc-900/60 border border-zinc-800 text-[11px] text-zinc-400 space-y-1.5">
+                <div className="flex items-center gap-1.5 text-orange-400 font-semibold">
                   <ShieldCheck className="w-3.5 h-3.5" />
                   <span>VPS Security & Extraction Pipeline</span>
                 </div>
@@ -172,11 +172,11 @@ export const ImportZipModal: React.FC<ImportZipModalProps> = ({
                 </div>
               )}
 
-              <div className="mt-6 flex items-center justify-end gap-2.5 pt-3 border-t border-zinc-800">
+              <div className="mt-6 flex items-center justify-end gap-2.5 pt-3 border-t border-zinc-800/80">
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-4 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold"
+                  className="px-4 py-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 active:scale-95 text-zinc-300 text-xs font-semibold border border-zinc-800 transition-all"
                 >
                   Cancel
                 </button>
@@ -184,7 +184,7 @@ export const ImportZipModal: React.FC<ImportZipModalProps> = ({
                   type="button"
                   onClick={startZipUpload}
                   disabled={!selectedZip}
-                  className="px-5 py-2 rounded-lg bg-orange-600 hover:bg-orange-500 disabled:bg-zinc-800 disabled:text-zinc-600 text-white text-xs font-semibold shadow-md shadow-orange-600/20 flex items-center gap-1.5"
+                  className="px-5 py-2 rounded-lg bg-orange-600 hover:bg-orange-500 active:bg-orange-700 active:scale-95 disabled:bg-zinc-800 disabled:text-zinc-600 text-white text-xs font-bold shadow-md shadow-orange-950/40 flex items-center gap-1.5 transition-all"
                 >
                   <FileArchive className="w-3.5 h-3.5" />
                   <span>Upload & Extract on VPS</span>
@@ -214,7 +214,7 @@ export const ImportZipModal: React.FC<ImportZipModalProps> = ({
                     <div
                       key={step}
                       className={`h-1.5 rounded-full transition-all duration-300 ${
-                        currentStage >= step ? 'bg-orange-500' : 'bg-zinc-800'
+                        currentStage >= step ? 'bg-orange-500' : 'bg-zinc-900 border border-zinc-800'
                       }`}
                     />
                   ))}
@@ -222,7 +222,7 @@ export const ImportZipModal: React.FC<ImportZipModalProps> = ({
               </div>
 
               {/* Progress Bar */}
-              <div className="w-full h-2.5 bg-zinc-950 rounded-full overflow-hidden border border-zinc-800">
+              <div className="w-full h-2.5 bg-zinc-900 rounded-full overflow-hidden border border-zinc-800">
                 {currentStage === 2 && (!currentTransfer.total_files_count || currentTransfer.total_files_count === 0) ? (
                   <div className="h-full bg-gradient-to-r from-orange-600 to-amber-400 animate-pulse w-full" />
                 ) : (
@@ -234,7 +234,7 @@ export const ImportZipModal: React.FC<ImportZipModalProps> = ({
               </div>
 
               {/* Real Stats Box */}
-              <div className="bg-zinc-950 border border-zinc-800 rounded-xl p-3.5 space-y-2 text-xs font-mono">
+              <div className="bg-zinc-900/80 border border-zinc-800 rounded-xl p-3.5 space-y-2 text-xs font-mono">
                 <div className="flex justify-between">
                   <span className="text-zinc-500">ZIP File:</span>
                   <span className="text-zinc-200 truncate max-w-[240px]">{currentTransfer.filename}</span>
@@ -278,7 +278,7 @@ export const ImportZipModal: React.FC<ImportZipModalProps> = ({
                       </span>
                     </div>
                     {currentTransfer.current_file && (
-                      <div className="flex justify-between pt-1 border-t border-zinc-900">
+                      <div className="flex justify-between pt-1 border-t border-zinc-800">
                         <span className="text-zinc-500">Processing:</span>
                         <span className="text-zinc-300 truncate max-w-[220px]">{currentTransfer.current_file}</span>
                       </div>
@@ -313,13 +313,13 @@ export const ImportZipModal: React.FC<ImportZipModalProps> = ({
                   <>
                     <button
                       onClick={() => setShowCancelModal(true)}
-                      className="px-3.5 py-1.5 rounded-lg bg-zinc-800 hover:bg-rose-950/60 hover:text-rose-400 text-zinc-300 text-xs font-semibold transition-colors"
+                      className="px-3.5 py-1.5 rounded-lg bg-zinc-900 hover:bg-rose-950/60 hover:text-rose-400 active:scale-95 text-zinc-300 text-xs font-semibold border border-zinc-800 transition-all"
                     >
                       Cancel Transfer
                     </button>
                     <button
                       onClick={onClose}
-                      className="px-4 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-semibold transition-colors flex items-center gap-1.5"
+                      className="px-4 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 active:scale-95 text-zinc-200 text-xs font-semibold border border-zinc-800 transition-all flex items-center gap-1.5"
                     >
                       <Minimize2 className="w-3.5 h-3.5 text-orange-400" />
                       <span>Run in Background</span>
@@ -332,7 +332,7 @@ export const ImportZipModal: React.FC<ImportZipModalProps> = ({
                         onSuccess();
                         onClose();
                       }}
-                      className="px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition-colors"
+                      className="px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-xs font-semibold transition-all shadow-md"
                     >
                       Done
                     </button>
@@ -341,7 +341,7 @@ export const ImportZipModal: React.FC<ImportZipModalProps> = ({
                   <div className="w-full flex justify-end">
                     <button
                       onClick={onClose}
-                      className="px-4 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-semibold transition-colors"
+                      className="px-4 py-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 active:scale-95 text-zinc-300 text-xs font-semibold border border-zinc-800 transition-all"
                     >
                       Close
                     </button>

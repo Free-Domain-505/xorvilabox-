@@ -213,7 +213,7 @@ function AppContent() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-zinc-950 text-zinc-100 font-sans selection:bg-orange-500 selection:text-white">
+    <div className="min-h-screen flex flex-col bg-black text-zinc-100 font-sans selection:bg-orange-500 selection:text-white">
       
       {/* Navigation Header */}
       <Navbar
@@ -225,7 +225,7 @@ function AppContent() {
       />
 
       {/* Main Content Area */}
-      <main className="flex-1">
+      <main className="flex-1 bg-black text-zinc-100">
         {currentTab === 'files' && (
           <FileManager
             currentFolder={currentFolder}
@@ -277,9 +277,9 @@ function AppContent() {
 
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 bg-zinc-900 border border-orange-500/50 shadow-xl shadow-orange-950/40 text-zinc-100 text-xs px-4 py-3 rounded-xl flex items-center gap-2.5 animate-in slide-in-from-bottom-3 duration-200">
-          <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
-          <span>{toastMessage}</span>
+        <div className="fixed bottom-6 right-6 z-50 bg-zinc-950 border border-zinc-800 shadow-2xl shadow-black/90 text-zinc-100 text-xs px-4 py-3 rounded-xl flex items-center gap-2.5 animate-in slide-in-from-bottom-3 duration-200 backdrop-blur-md">
+          <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse shadow-sm shadow-orange-500/50" />
+          <span className="font-medium">{toastMessage}</span>
         </div>
       )}
 

@@ -1,1 +1,60 @@
 @import "tailwindcss";
+
+/* Global tactile micro-interactions for buttons and interactive elements */
+button, 
+[role="button"],
+input[type="button"],
+input[type="submit"] {
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Crisp tactile feedback when clicking or tapping any button */
+button:not(:disabled):active, 
+[role="button"]:not([aria-disabled="true"]):active,
+input[type="button"]:not(:disabled):active,
+input[type="submit"]:not(:disabled):active {
+  transform: scale(0.96) translateY(1px);
+  filter: brightness(0.92);
+}
+
+/* Clickable text and links tactile feedback */
+a, 
+.clickable-text {
+  transition: color 0.15s ease, opacity 0.15s ease, transform 0.15s ease;
+  cursor: pointer;
+}
+
+a:active, 
+.clickable-text:active {
+  opacity: 0.75;
+  transform: scale(0.98);
+}
+
+/* Premium smooth custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #09090b;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #27272a;
+  border-radius: 9999px;
+  border: 1px solid #18181b;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #f97316;
+}
+
+/* Smooth keyboard accessibility outline */
+*:focus-visible {
+  outline: 2px solid rgba(249, 115, 22, 0.6) !important;
+  outline-offset: 2px !important;
+}

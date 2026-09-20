@@ -65,15 +65,15 @@ export const FileCard: React.FC<FileCardProps> = ({
   };
 
   return (
-    <div className="group bg-zinc-900/60 hover:bg-zinc-900 border border-zinc-800/80 hover:border-zinc-700 rounded-xl p-3.5 flex items-center justify-between gap-3 transition-colors">
+    <div className="group bg-zinc-950/80 hover:bg-zinc-900 border border-zinc-800/80 hover:border-zinc-700 rounded-xl p-3.5 flex items-center justify-between gap-3 transition-all duration-150 active:scale-[0.99] shadow-sm hover:shadow-lg">
       
       {/* File Info */}
       <div className="flex items-center gap-3 min-w-0">
-        <div className="w-10 h-10 rounded-lg bg-zinc-950 border border-zinc-800 flex items-center justify-center shrink-0">
+        <div className="w-10 h-10 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center shrink-0">
           {getIcon()}
         </div>
         <div className="min-w-0">
-          <p className="text-sm font-medium text-zinc-200 group-hover:text-white truncate" title={file.stored_filename}>
+          <p className="text-sm font-medium text-zinc-200 group-hover:text-orange-400 truncate transition-colors" title={file.stored_filename}>
             {file.stored_filename}
           </p>
           <div className="flex items-center gap-2 text-[11px] text-zinc-500 font-mono mt-0.5">
@@ -88,16 +88,16 @@ export const FileCard: React.FC<FileCardProps> = ({
       <div className="flex items-center gap-1.5 shrink-0">
         <button
           onClick={() => onOpenRawModal(file)}
-          className="px-2.5 py-1 rounded-md bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-medium border border-zinc-700/60 flex items-center gap-1 transition-colors"
+          className="px-2.5 py-1 rounded-lg bg-zinc-900 hover:bg-zinc-800 active:bg-zinc-850 text-orange-400 text-xs font-medium border border-zinc-800 hover:border-zinc-700 active:scale-95 flex items-center gap-1 transition-all"
         >
-          <Link2 className="w-3.5 h-3.5 text-zinc-400" />
+          <Link2 className="w-3.5 h-3.5 text-orange-400" />
           <span className="hidden sm:inline">Raw</span>
         </button>
 
         <button
           onClick={handleCopy}
           title="Copy Raw URL"
-          className="p-1.5 rounded-md bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white border border-zinc-700/60 transition-colors"
+          className="p-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 active:bg-zinc-850 text-zinc-400 hover:text-white border border-zinc-800 hover:border-zinc-700 active:scale-95 transition-all"
         >
           {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
         </button>
@@ -106,7 +106,7 @@ export const FileCard: React.FC<FileCardProps> = ({
           href={`${file.raw_url}&dl=1`}
           download={file.stored_filename}
           title="Download file"
-          className="p-1.5 rounded-md bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white border border-zinc-700/60 transition-colors"
+          className="p-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 active:bg-zinc-850 text-zinc-400 hover:text-white border border-zinc-800 hover:border-zinc-700 active:scale-95 transition-all"
         >
           <Download className="w-3.5 h-3.5" />
         </a>
@@ -115,16 +115,16 @@ export const FileCard: React.FC<FileCardProps> = ({
         <div className="relative" ref={menuRef}>
           <button
             onClick={() => setMenuOpen(!menuOpen)}
-            className="p-1.5 rounded-md text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+            className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 active:scale-95 transition-all"
           >
             <MoreVertical className="w-4 h-4" />
           </button>
 
           {menuOpen && (
-            <div className="absolute right-0 top-full mt-1 w-44 bg-zinc-950 border border-zinc-800 rounded-lg shadow-xl z-20 py-1 text-xs">
+            <div className="absolute right-0 top-full mt-1 w-44 bg-zinc-950 border border-zinc-800 rounded-xl shadow-2xl shadow-black/80 z-20 py-1 text-xs backdrop-blur-md">
               <button
                 onClick={() => { setMenuOpen(false); onDetails(file); }}
-                className="w-full px-3 py-2 flex items-center gap-2 text-zinc-300 hover:text-white hover:bg-zinc-800/80"
+                className="w-full px-3 py-2 flex items-center gap-2 text-zinc-300 hover:text-white hover:bg-zinc-850 active:bg-zinc-800 transition-colors"
               >
                 <Info className="w-3.5 h-3.5 text-zinc-400" />
                 <span>Details</span>
@@ -132,10 +132,10 @@ export const FileCard: React.FC<FileCardProps> = ({
 
               {isAuthenticated && (
                 <>
-                  <div className="my-1 border-t border-zinc-800" />
+                  <div className="my-1 border-t border-zinc-800/80" />
                   <button
                     onClick={() => { setMenuOpen(false); onRename(file); }}
-                    className="w-full px-3 py-2 flex items-center gap-2 text-zinc-300 hover:text-white hover:bg-zinc-800/80"
+                    className="w-full px-3 py-2 flex items-center gap-2 text-zinc-300 hover:text-white hover:bg-zinc-850 active:bg-zinc-800 transition-colors"
                   >
                     <FileEdit className="w-3.5 h-3.5 text-zinc-400" />
                     <span>Rename</span>
@@ -143,7 +143,7 @@ export const FileCard: React.FC<FileCardProps> = ({
 
                   <button
                     onClick={() => { setMenuOpen(false); onMove(file); }}
-                    className="w-full px-3 py-2 flex items-center gap-2 text-zinc-300 hover:text-white hover:bg-zinc-800/80"
+                    className="w-full px-3 py-2 flex items-center gap-2 text-zinc-300 hover:text-white hover:bg-zinc-850 active:bg-zinc-800 transition-colors"
                   >
                     <Move className="w-3.5 h-3.5 text-zinc-400" />
                     <span>Move</span>
@@ -151,7 +151,7 @@ export const FileCard: React.FC<FileCardProps> = ({
 
                   <button
                     onClick={() => { setMenuOpen(false); onDelete(file); }}
-                    className="w-full px-3 py-2 flex items-center gap-2 text-rose-400 hover:bg-rose-950/40"
+                    className="w-full px-3 py-2 flex items-center gap-2 text-rose-400 hover:bg-rose-950/40 active:bg-rose-950/60 transition-colors"
                   >
                     <Trash2 className="w-3.5 h-3.5 text-rose-400" />
                     <span>Delete</span>
