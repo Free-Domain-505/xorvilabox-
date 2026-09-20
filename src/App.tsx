@@ -246,6 +246,7 @@ function AppContent() {
             onDeleteItem={(item, isFolder) => setDeleteTarget({ item, isFolder })}
             onShowDetails={(item, isFolder) => setDetailsTarget({ item, isFolder })}
             isAuthenticated={!!user}
+            onShowToast={showToast}
           />
         )}
 

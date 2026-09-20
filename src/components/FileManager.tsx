@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { 
   FolderPlus, Upload, Globe, FileArchive, Search, ArrowUpDown, 
-  ChevronRight, Home, Film, FileText, AlertTriangle, Loader2 
+  ChevronRight, Home, Film, FileText, AlertTriangle, Loader2,
+  Copy, Check, ListOrdered
 } from 'lucide-react';
 import { type FileItem, type Folder, type BreadcrumbItem } from '../types.js';
 import { EpisodeCard } from './EpisodeCard.js';
 import { FileCard } from './FileCard.js';
 import { FolderCard } from './FolderCard.js';
+import { BatchLinksModal } from './BatchLinksModal.js';
 
 interface FileManagerProps {
   currentFolder: Folder | null;
@@ -27,6 +29,7 @@ interface FileManagerProps {
   onDeleteItem: (item: FileItem | Folder, isFolder: boolean) => void;
   onShowDetails: (item: FileItem | Folder, isFolder: boolean) => void;
   isAuthenticated: boolean;
+  onShowToast?: (msg: string) => void;
 }
 
 export const FileManager: React.FC<FileManagerProps> = ({
@@ -48,9 +51,12 @@ export const FileManager: React.FC<FileManagerProps> = ({
   onDeleteItem,
   onShowDetails,
   isAuthenticated,
+  onShowToast,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOption, setSortOption] = useState<'episode' | 'name-asc' | 'name-desc' | 'size-desc' | 'size-asc' | 'date-desc'>('episode');
+  const [copiedAll, setCopiedAll] = useState(false);
+  const [showBatchModal, setShowBatchModal] = useState(false);
 
   // Filter based on search query
   const filteredFolders = folders.filter((f) =>
@@ -96,6 +102,17 @@ export const FileManager: React.FC<FileManagerProps> = ({
 
   const sortedEpisodes = sortFiles(episodeFiles);
   const sortedOtherFiles = sortFiles(otherFiles);
+
+  const handleCopyAllLinks = (targetEpisodes: FileItem[]) => {
+    if (targetEpisodes.length === 0) return;
+    const links = targetEpisodes.map((ep) => ep.raw_url).join('\n');
+    navigator.clipboard.writeText(links);
+    setCopiedAll(true);
+    if (onShowToast) {
+      onShowToast(`Copied ${targetEpisodes.length} episode direct raw link${targetEpisodes.length === 1 ? '' : 's'} to clipboard`);
+    }
+    setTimeout(() => setCopiedAll(false), 2200);
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
@@ -216,6 +233,18 @@ export const FileManager: React.FC<FileManagerProps> = ({
             <span>Import ZIP</span>
           </button>
 
+          {/* Action: Copy All Episode Links (if folder contains episodes) */}
+          {sortedEpisodes.length > 0 && (
+            <button
+              onClick={() => handleCopyAllLinks(sortedEpisodes)}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-orange-600/20 hover:bg-orange-600/30 text-orange-400 border border-orange-500/30 text-xs font-semibold active:scale-95 transition-all shadow-sm"
+              title="Copy direct raw URLs for all episodes in this view"
+            >
+              {copiedAll ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+              <span>{copiedAll ? 'Copied Links!' : `Copy All Links (${sortedEpisodes.length})`}</span>
+            </button>
+          )}
+
         </div>
       </div>
 
@@ -254,14 +283,49 @@ export const FileManager: React.FC<FileManagerProps> = ({
           {/* Anime Episode Cards Section (Section 14 & 15) */}
           {sortedEpisodes.length > 0 && (
             <div className="space-y-3 pt-2">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-orange-400 flex items-center gap-2">
-                  <Film className="w-4 h-4" />
-                  <span>Anime Episodes ({sortedEpisodes.length})</span>
-                </h3>
-                <span className="text-[11px] font-mono text-zinc-500">
-                  Automatically sorted by episode number
-                </span>
+              <div className="flex flex-wrap items-center justify-between gap-3 bg-zinc-950/80 border border-zinc-800 rounded-xl px-4 py-3 shadow-sm">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-orange-600/20 border border-orange-500/30 flex items-center justify-center text-orange-400 shrink-0 shadow-inner">
+                    <Film className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-orange-400 flex items-center gap-1.5">
+                      <span>Anime Episodes ({sortedEpisodes.length})</span>
+                    </h3>
+                    <p className="text-[11px] font-mono text-zinc-500">
+                      Direct streaming & download endpoints ready
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleCopyAllLinks(sortedEpisodes)}
+                    className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-orange-600 hover:bg-orange-500 active:bg-orange-700 text-white text-xs font-bold shadow-md shadow-orange-950/40 active:scale-95 transition-all"
+                    title="Copy all direct raw URLs to clipboard (1 URL per line)"
+                  >
+                    {copiedAll ? (
+                      <>
+                        <Check className="w-3.5 h-3.5 text-white" />
+                        <span>Copied {sortedEpisodes.length} Links!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3.5 h-3.5" />
+                        <span>Copy All Links</span>
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={() => setShowBatchModal(true)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 active:scale-95 text-zinc-300 hover:text-white border border-zinc-800 text-xs font-medium transition-all"
+                    title="View all URLs, export M3U playlist or download TXT list"
+                  >
+                    <ListOrdered className="w-3.5 h-3.5 text-orange-400" />
+                    <span>Options / Playlist</span>
+                  </button>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -356,6 +420,15 @@ export const FileManager: React.FC<FileManagerProps> = ({
           )}
         </>
       )}
+
+      {/* Batch Links Export Modal */}
+      <BatchLinksModal
+        isOpen={showBatchModal}
+        onClose={() => setShowBatchModal(false)}
+        episodes={sortedEpisodes}
+        folderName={currentFolder?.name}
+        onShowToast={onShowToast || (() => {})}
+      />
 
     </div>
   );
