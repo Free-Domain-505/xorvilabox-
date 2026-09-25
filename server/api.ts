@@ -3,6 +3,8 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import crypto from 'crypto';
+import { spawn } from 'child_process';
+import AdmZip from 'adm-zip';
 import { getDb } from './db.js';
 import {
   getFolderStoragePath,
@@ -20,7 +22,7 @@ import {
   type AuthenticatedRequest,
 } from './auth.js';
 import { startUrlImportJob } from './urlImporter.js';
-import { processZipArchive } from './zipHandler.js';
+import { processZipArchive, get7zBinary } from './zipHandler.js';
 import { transferManager } from './transferManager.js';
 
 export const apiRouter: Router = express.Router();
@@ -755,6 +757,243 @@ apiRouter.delete('/files/:id', requireAuth, async (req: Request, res: Response) 
   await db.execute({ sql: `DELETE FROM files WHERE id = ?`, args: [id] });
 
   res.json({ success: true, message: 'File deleted from VPS storage and database.' });
+});
+
+// Bulk delete files
+apiRouter.post('/files/bulk-delete', requireAuth, async (req: Request, res: Response) => {
+  const { fileIds } = req.body;
+  if (!Array.isArray(fileIds) || fileIds.length === 0) {
+    res.status(400).json({ error: 'Array of fileIds is required' });
+    return;
+  }
+
+  const db = getDb();
+  let deletedCount = 0;
+
+  try {
+    for (const id of fileIds) {
+      const fileResult = await db.execute({
+        sql: `SELECT f.*, fo.folder_uid FROM files f LEFT JOIN folders fo ON f.folder_id = fo.id WHERE f.id = ?`,
+        args: [id],
+      });
+
+      if (fileResult.rows.length === 0) continue;
+
+      const file = fileResult.rows[0] as any;
+      const folderDir = getFolderStoragePath(file.folder_uid);
+      const filePath = path.join(folderDir, file.stored_filename);
+
+      // Delete from real VPS filesystem
+      if (fs.existsSync(filePath)) {
+        try {
+          fs.unlinkSync(filePath);
+        } catch (err) {
+          console.warn(`[XorvilaBox] Unlink failed for ${filePath}:`, err);
+        }
+      }
+
+      await db.execute({ sql: `DELETE FROM files WHERE id = ?`, args: [id] });
+      deletedCount++;
+    }
+
+    res.json({ success: true, message: `Successfully deleted ${deletedCount} files from VPS storage and database.` });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Failed to bulk delete files' });
+  }
+});
+
+// Bulk move files
+apiRouter.post('/files/bulk-move', requireAuth, async (req: Request, res: Response) => {
+  const { fileIds, folderId } = req.body;
+  if (!Array.isArray(fileIds) || fileIds.length === 0) {
+    res.status(400).json({ error: 'Array of fileIds is required' });
+    return;
+  }
+
+  const db = getDb();
+  const targetFolderId = folderId === 'null' || !folderId || folderId === 'root' ? null : folderId;
+
+  try {
+    let targetFolderUid: string | null = null;
+    if (targetFolderId) {
+      const targetFolderResult = await db.execute({
+        sql: `SELECT folder_uid FROM folders WHERE id = ?`,
+        args: [targetFolderId],
+      });
+      if (targetFolderResult.rows.length === 0) {
+        res.status(404).json({ error: 'Destination folder not found' });
+        return;
+      }
+      targetFolderUid = targetFolderResult.rows[0].folder_uid as string;
+    }
+
+    const targetDir = getFolderStoragePath(targetFolderUid);
+    let movedCount = 0;
+
+    for (const id of fileIds) {
+      const fileResult = await db.execute({
+        sql: `SELECT f.*, fo.folder_uid FROM files f LEFT JOIN folders fo ON f.folder_id = fo.id WHERE f.id = ?`,
+        args: [id],
+      });
+
+      if (fileResult.rows.length === 0) continue;
+
+      const currentFile = fileResult.rows[0] as any;
+      const currentDir = getFolderStoragePath(currentFile.folder_uid);
+      const currentPath = path.join(currentDir, currentFile.stored_filename);
+
+      let newStoredName = currentFile.stored_filename;
+      const newPath = path.join(targetDir, newStoredName);
+
+      if (fs.existsSync(currentPath)) {
+        if (newPath !== currentPath && fs.existsSync(newPath)) {
+          const ext = path.extname(newStoredName);
+          const base = path.basename(newStoredName, ext);
+          newStoredName = `${base} (${Date.now()})${ext}`;
+        }
+        const finalDest = path.join(targetDir, newStoredName);
+        fs.renameSync(currentPath, finalDest);
+      }
+
+      // Recalculate anime metadata if name changed
+      const animeMeta = parseAnimeFilename(newStoredName);
+      const now = new Date().toISOString();
+
+      await db.execute({
+        sql: `UPDATE files SET folder_id = ?, stored_filename = ?, season_number = ?, episode_number = ?, resolution = ?, audio_language = ?, is_anime_episode = ?, updated_at = ? WHERE id = ?`,
+        args: [
+          targetFolderId,
+          newStoredName,
+          animeMeta.seasonNumber,
+          animeMeta.episodeNumber,
+          animeMeta.resolution,
+          animeMeta.audioLanguage,
+          animeMeta.isAnimeEpisode ? 1 : 0,
+          now,
+          id,
+        ],
+      });
+
+      movedCount++;
+    }
+
+    res.json({ success: true, message: `Successfully moved ${movedCount} files on VPS.` });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || 'Failed to bulk move files' });
+  }
+});
+
+// Bulk download files
+apiRouter.get('/files/bulk-download', async (req: Request, res: Response) => {
+  const idsParam = req.query.ids as string;
+  if (!idsParam) {
+    res.status(400).send('No file IDs provided');
+    return;
+  }
+
+  const fileIds = idsParam.split(',').filter(Boolean);
+  if (fileIds.length === 0) {
+    res.status(400).send('No file IDs provided');
+    return;
+  }
+
+  const db = getDb();
+  try {
+    // Dynamically build SQL with placeholders
+    const placeholders = fileIds.map(() => '?').join(',');
+    const filesResult = await db.execute({
+      sql: `SELECT f.*, fo.folder_uid FROM files f LEFT JOIN folders fo ON f.folder_id = fo.id WHERE f.id IN (${placeholders})`,
+      args: fileIds,
+    });
+
+    if (filesResult.rows.length === 0) {
+      res.status(404).send('No files found for download');
+      return;
+    }
+
+    const filesToZip: Array<{ path: string; name: string }> = [];
+    for (const row of filesResult.rows as any[]) {
+      const folderDir = getFolderStoragePath(row.folder_uid);
+      const filePath = path.join(folderDir, row.stored_filename);
+      if (fs.existsSync(filePath)) {
+        filesToZip.push({
+          path: filePath,
+          name: row.stored_filename,
+        });
+      }
+    }
+
+    if (filesToZip.length === 0) {
+      res.status(404).send('No physical files exist for these records');
+      return;
+    }
+
+    // Generate a temporary zip archive filename in /tmp
+    const tempZipName = `bulk_download_${crypto.randomBytes(6).toString('hex')}.zip`;
+    const tempZipPath = path.join('/tmp', tempZipName);
+
+    const sevenBinPath = get7zBinary();
+    if (sevenBinPath) {
+      // Create a zip using native 7z/7za without compression (mx=0) for ultra-fast, zero-overhead zipping
+      const filePaths = filesToZip.map((f) => f.path);
+      
+      const proc = spawn(sevenBinPath, ['a', '-tzip', '-mx=0', tempZipPath, ...filePaths]);
+      
+      proc.on('close', (code: number | null) => {
+        if (code === 0 && fs.existsSync(tempZipPath)) {
+          res.setHeader('Content-Type', 'application/zip');
+          res.setHeader('Content-Disposition', `attachment; filename="xorvilabox_download.zip"`);
+          res.sendFile(tempZipPath, (err?: Error) => {
+            try {
+              fs.unlinkSync(tempZipPath);
+            } catch {}
+            if (err) {
+              console.error('Error sending bulk zip file:', err);
+            }
+          });
+        } else {
+          res.status(500).send('Failed to build native archive for download');
+        }
+      });
+
+      proc.on('error', (err: Error) => {
+        console.error('7z spawn error:', err);
+        // Fallback to AdmZip if spawning fails
+        try {
+          const zip = new AdmZip();
+          for (const item of filesToZip) {
+            zip.addLocalFile(item.path, '', item.name);
+          }
+          zip.writeZip(tempZipPath);
+          res.setHeader('Content-Type', 'application/zip');
+          res.setHeader('Content-Disposition', `attachment; filename="xorvilabox_download.zip"`);
+          res.sendFile(tempZipPath, (err?: Error) => {
+            try { fs.unlinkSync(tempZipPath); } catch {}
+          });
+        } catch (zipErr: any) {
+          res.status(500).send(`Archive error: ${zipErr.message}`);
+        }
+      });
+    } else {
+      // Fallback to JS AdmZip directly
+      try {
+        const zip = new AdmZip();
+        for (const item of filesToZip) {
+          zip.addLocalFile(item.path, '', item.name);
+        }
+        zip.writeZip(tempZipPath);
+        res.setHeader('Content-Type', 'application/zip');
+        res.setHeader('Content-Disposition', `attachment; filename="xorvilabox_download.zip"`);
+        res.sendFile(tempZipPath, (err?: Error) => {
+          try { fs.unlinkSync(tempZipPath); } catch {}
+        });
+      } catch (zipErr: any) {
+        res.status(500).send(`Archive error: ${zipErr.message}`);
+      }
+    }
+  } catch (err: any) {
+    res.status(500).send(`Failed to initiate bulk download: ${err.message}`);
+  }
 });
 
 /* ========================================================

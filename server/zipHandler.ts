@@ -15,7 +15,7 @@ const MAX_ZIP_FILES = 5000;
  * Locate a working 7za or 7z binary.
  * Checks bundled 7zip-bin, system PATH via `which`, and standard Linux locations.
  */
-function get7zBinary(): string | null {
+export function get7zBinary(): string | null {
   try {
     if (sevenBin && sevenBin.path7za && fs.existsSync(sevenBin.path7za)) {
       try {
